@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>플레이그라운드 발주 매니저</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+       background: #f5f5f7; color: #1d1d1f; min-height: 100vh; padding-top: 96px; }
+
+/* ── 앱 헤더 ── */
+.app-header { background: #fff; padding: 12px 16px 10px; position: fixed; top: 0; left: 0; right: 0; z-index: 150;
+              box-shadow: 0 1px 0 rgba(0,0,0,.08); }
+.app-title { font-size: 17px; font-weight: 700; color: #1d1d1f; }
+.app-sub { font-size: 11px; color: #86868b; margin-top: 1px; }
+
+/* ── 상단 탭바 ── */
+.tab-bar { position: fixed; top: 48px; left: 0; right: 0; background: #fff;
+            border-bottom: 2px solid rgba(0,0,0,.08); display: flex; z-index: 200; }
+.tab-bar-btn { flex: 1; padding: 10px 0 10px; border: none; background: none; cursor: pointer;
+                font-size: 13px; font-weight: 600; color: #86868b; display: flex; flex-direction: row;
+                align-items: center; justify-content: center; gap: 6px; transition: color .2s; }
+.tab-bar-btn .icon { font-size: 18px; }
+.tab-bar-btn.active { color: #007aff; border-bottom: 2px solid #007aff; }
+
+/* ── 뷰 컨테이너 ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ══════════ 매출 트래커 ══════════ */
+.sales-section { padding: 12px 16px; }
+
+/* 전체 누적 카드 */
+.total-card { background: linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%);
+               border-radius: 18px; padding: 18px 20px; color: #fff; margin-bottom: 12px; }
+.total-label { font-size: 12px; opacity: .7; margin-bottom: 6px; }
+.total-amount { font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
+.total-sub { font-size: 11px; opacity: .6; margin-top: 4px; }
+
+/* 1호점 / 2호점 카드 */
+.store-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.store-card { background: #fff; border-radius: 16px; padding: 14px;
+               box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.store-card.s1 { border-top: 3px solid #34c759; }
+.store-card.s2 { border-top: 3px solid #007aff; }
+.store-name { font-size: 12px; font-weight: 700; color: #636366; margin-bottom: 10px; }
+.store-stat { margin-bottom: 8px; }
+.store-stat .lbl { font-size: 10px; color: #aeaeb2; margin-bottom: 2px; }
+.store-stat .val { font-size: 15px; font-weight: 700; color: #1d1d1f; }
+.store-stat .val.highlight { color: #ff3b30; }
+
+/* 달력 섹션 */
+.cal-section { background: #fff; border-radius: 18px; margin: 0 16px 12px;
+                box-shadow: 0 1px 4px rgba(0,0,0,.07); overflow: hidden; }
+.cal-header { display: flex; align-items: center; justify-content: space-between;
+               padding: 14px 16px 10px; }
+.cal-month { font-size: 16px; font-weight: 700; }
+.cal-nav { display: flex; gap: 8px; align-items: center; }
+.cal-nav-btn { width: 32px; height: 32px; border: none; background: #f2f2f7; border-radius: 50%;
+                font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.cal-store-filter { display: flex; gap: 6px; padding: 0 16px 10px; }
+.csf-btn { flex: 1; padding: 6px 0; border-radius: 20px; font-size: 12px; font-weight: 600;
+             border: 1.5px solid #e0e0e0; background: #fff; color: #636366; cursor: pointer; }
+.csf-btn.active { background: #1d1d1f; color: #fff; border-color: #1d1d1f; }
+.cal-weekdays { display: grid; grid-template-columns: repeat(7,1fr); padding: 0 8px; }
+.cal-weekday { text-align: center; font-size: 11px; font-weight: 600; color: #aeaeb2;
+                padding: 4px 0; }
+.cal-weekday:first-child { color: #ff3b30; }
+.cal-weekday:last-child { color: #007aff; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); padding: 0 8px 12px; gap: 2px; }
+.cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
+              justify-content: center; border-radius: 10px; padding: 2px; cursor: default; }
+.cal-cell.empty { background: transparent; }
+.cal-cell.today { background: #fff3e0 !important; }
+.cal-day { font-size: 11px; font-weight: 600; color: #1d1d1f; line-height: 1; }
+.cal-cell.sun .cal-day { color: #ff3b30; }
+.cal-cell.sat .cal-day { color: #007aff; }
+.cal-sales { font-size: 9px; color: #636366; line-height: 1.2; margin-top: 2px; text-align: center; font-weight: 500; }
+.cal-cell.has-sales { background: #f0f9ff; }
+.cal-cell.has-sales.high { background: #dbeafe; }
+.cal-cell.has-sales.very-high { background: #bfdbfe; }
+.cal-cell.no-data { opacity: .35; }
+.cal-total-row { padding: 10px 16px 14px; border-top: 1px solid #f2f2f7; display: flex; justify-content: space-between; align-items: center; }
+.cal-total-label { font-size: 12px; color: #636366; font-weight: 500; }
+.cal-total-val { font-size: 15px; font-weight: 700; color: #1d1d1f; }
+
+/* ══════════ 재발주 트래커 ══════════ */
+.ro-header { background: #fff; padding: 12px 16px 0; position: sticky; top: 56px; z-index: 90;
+              box-shadow: 0 1px 0 rgba(0,0,0,.06); }
+.search-box { width: 100%; padding: 9px 14px; border-radius: 10px; border: none;
+               background: #f2f2f7; font-size: 15px; color: #1d1d1f; outline: none; margin-bottom: 10px; }
+.tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+        border: none; background: #f2f2f7; color: #636366; cursor: pointer; transition: all .2s; }
+.tab.active { background: #1d1d1f; color: #fff; }
+.filter-row { display: flex; gap: 6px; padding: 0 16px 8px; overflow-x: auto; scrollbar-width: none; }
+.filter-row::-webkit-scrollbar { display: none; }
+.filter-btn { flex-shrink: 0; padding: 5px 12px; border-radius: 20px; font-size: 12px;
+               border: 1.5px solid #e0e0e0; background: #fff; color: #636366; cursor: pointer; }
+.filter-btn.active { border-color: #1d1d1f; color: #1d1d1f; font-weight: 600; }
+.summary { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; }
+.summary::-webkit-scrollbar { display: none; }
+.sum-card { flex-shrink: 0; background: #fff; border-radius: 14px; padding: 12px 16px;
+             min-width: 100px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.sum-card .num { font-size: 24px; font-weight: 700; }
+.sum-card .lbl { font-size: 11px; color: #86868b; margin-top: 2px; }
+.sum-card.urgent .num { color: #ff3b30; }
+.sum-card.pending .num { color: #007aff; }
+.sum-card.done .num { color: #34c759; }
+.list { padding: 0 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+.item-card { background: #fff; border-radius: 14px; padding: 14px; cursor: pointer;
+              box-shadow: 0 1px 3px rgba(0,0,0,.06); transition: transform .1s, opacity .2s;
+              border-left: 4px solid transparent; }
+.item-card:active { transform: scale(.98); }
+.item-card.status-0 { border-left-color: #ff3b30; }
+.item-card.status-1 { border-left-color: #007aff; }
+.item-card.status-2 { border-left-color: #34c759; opacity: .7; }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.item-name { font-size: 14px; font-weight: 600; line-height: 1.35; flex: 1; }
+.status-btn { flex-shrink: 0; padding: 5px 12px; border-radius: 20px; font-size: 12px;
+               font-weight: 600; border: none; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.status-btn.s0 { background: #fff0ef; color: #ff3b30; }
+.status-btn.s1 { background: #e8f0fe; color: #007aff; }
+.status-btn.s2 { background: #e8f7ee; color: #34c759; }
+.card-meta { display: flex; gap: 8px; align-items: center; margin-top: 7px; flex-wrap: wrap; }
+.tag { font-size: 11px; padding: 3px 8px; border-radius: 8px; background: #f2f2f7; color: #636366; font-weight: 500; }
+.tag.price { background: #fff8e7; color: #b5830a; }
+.tag.days-urgent { background: #fff0ef; color: #ff3b30; }
+.tag.days-warn { background: #fff8e7; color: #b5830a; }
+.tag.days-ok { background: #f2f2f7; color: #86868b; }
+.order-info { margin-top: 8px; padding: 8px 10px; background: #f5f5f7; border-radius: 8px;
+               font-size: 12px; color: #636366; display: none; }
+.order-info.visible { display: block; }
+.empty { text-align: center; padding: 60px 20px; color: #86868b; }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+/* ── 모달 ── */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 300; align-items: flex-end; }
+.modal-bg.open { display: flex; }
+.modal { background: #fff; border-radius: 22px 22px 0 0; padding: 20px 20px 40px; width: 100%; }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.modal-item-name { font-size: 14px; color: #636366; margin-bottom: 16px; line-height: 1.4; }
+.modal-options { display: flex; flex-direction: column; gap: 10px; }
+.modal-opt { padding: 14px 16px; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; text-align: left; }
+.modal-opt.s0 { background: #fff0ef; color: #ff3b30; }
+.modal-opt.s1 { background: #e8f0fe; color: #007aff; }
+.modal-opt.s2 { background: #e8f7ee; color: #34c759; }
+.modal-cancel { margin-top: 8px; width: 100%; padding: 14px; border-radius: 12px; border: none; background: #f2f2f7; font-size: 15px; font-weight: 600; cursor: pointer; }
+.note-label { font-size: 13px; font-weight: 600; color: #636366; margin: 14px 0 6px; }
+.note-field { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid #e0e0e0; font-size: 14px; font-family: inherit; outline: none; resize: none; }
+.note-field:focus { border-color: #1d1d1f; }
+.modal-save { margin-top: 10px; width: 100%; padding: 14px; border-radius: 12px; border: none; background: #1d1d1f; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
+
+/* 비밀번호 화면 */
+.pw-screen { position: fixed; inset: 0; background: #f5f5f7; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; }
+.pw-logo { font-size: 48px; margin-bottom: 16px; }
+.pw-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.pw-sub { font-size: 14px; color: #86868b; margin-bottom: 32px; }
+.pw-input { width: 100%; max-width: 320px; padding: 14px 16px; border-radius: 14px; border: 1.5px solid #e0e0e0; font-size: 18px; text-align: center; letter-spacing: 4px; outline: none; background: #fff; }
+.pw-input:focus { border-color: #1d1d1f; }
+.pw-btn { margin-top: 14px; width: 100%; max-width: 320px; padding: 14px; border-radius: 14px; border: none; background: #1d1d1f; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+.pw-error { margin-top: 10px; font-size: 13px; color: #ff3b30; min-height: 18px; }
+</style>
+</head>
+<body>
+
+<!-- 비밀번호 화면 -->
+<div class="pw-screen" id="pwScreen">
+  <div class="pw-logo">📦</div>
+  <div class="pw-title">플레이그라운드 발주 매니저</div>
+  <div class="pw-sub">접근 비밀번호를 입력하세요</div>
+  <input class="pw-input" type="password" id="pwInput" placeholder="••••" maxlength="8"
+         onkeydown="if(event.key==='Enter') checkPw()">
+  <button class="pw-btn" onclick="checkPw()">입장</button>
+  <div class="pw-error" id="pwError"></div>
+</div>
+
+<!-- 앱 본체 (비밀번호 통과 후 표시) -->
+<div id="appBody" style="display:none">
+
+<!-- 앱 헤더 -->
+<div class="app-header">
+  <div class="app-title">플레이그라운드 발주 매니저</div>
+  <div class="app-sub" id="appDate"></div>
+</div>
+
+<!-- 상단 탭바 -->
+<div class="tab-bar">
+  <button class="tab-bar-btn active" id="tbSales" onclick="switchView('sales')">
+    <span class="icon">📊</span><span>매출</span>
+  </button>
+  <button class="tab-bar-btn" id="tbReorder" onclick="switchView('reorder')">
+    <span class="icon">📦</span><span>재발주</span>
+  </button>
+</div>
+
+<!-- ── 매출 트래커 뷰 ── -->
+<div class="view active" id="view-sales">
+  <div class="sales-section">
+    <!-- 전체 누적 -->
+    <div class="total-card">
+      <div class="total-label">1호점 + 2호점 전체 누적 매출</div>
+      <div class="total-amount" id="totalAll">-</div>
+      <div class="total-sub" id="totalPeriod"></div>
+    </div>
+    <!-- 1호점 / 2호점 카드 -->
+    <div class="store-cards">
+      <div class="store-card s1">
+        <div class="store-name">🟢 1호점 (철산)</div>
+        <div class="store-stat"><div class="lbl">어제 매출</div><div class="val" id="s1Yesterday">-</div></div>
+        <div class="store-stat"><div class="lbl">이번 달 일평균</div><div class="val" id="s1AvgDay">-</div></div>
+        <div class="store-stat"><div class="lbl">이번 달 누적</div><div class="val highlight" id="s1MonthTotal">-</div></div>
+      </div>
+      <div class="store-card s2">
+        <div class="store-name">🔵 2호점 (푸르지오)</div>
+        <div class="store-stat"><div class="lbl">어제 매출</div><div class="val" id="s2Yesterday">-</div></div>
+        <div class="store-stat"><div class="lbl">이번 달 일평균</div><div class="val" id="s2AvgDay">-</div></div>
+        <div class="store-stat"><div class="lbl">이번 달 누적</div><div class="val highlight" id="s2MonthTotal">-</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 달력 -->
+  <div class="cal-section">
+    <div class="cal-header">
+      <div class="cal-month" id="calMonth"></div>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+        <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+    <div class="cal-store-filter">
+      <button class="csf-btn active" onclick="setCalStore('both',this)">합산</button>
+      <button class="csf-btn" onclick="setCalStore('s1',this)">1호점</button>
+      <button class="csf-btn" onclick="setCalStore('s2',this)">2호점</button>
+    </div>
+    <div class="cal-weekdays">
+      <div class="cal-weekday">일</div><div class="cal-weekday">월</div>
+      <div class="cal-weekday">화</div><div class="cal-weekday">수</div>
+      <div class="cal-weekday">목</div><div class="cal-weekday">금</div>
+      <div class="cal-weekday">토</div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-total-row">
+      <div class="cal-total-label" id="calTotalLabel">이번 달 합계</div>
+      <div class="cal-total-val" id="calTotal">-</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 재발주 트래커 뷰 ── -->
+<div class="view" id="view-reorder">
+  <div class="ro-header">
+    <input class="search-box" type="text" id="searchInput" placeholder="🔍 상품명 검색..." oninput="renderList()">
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('all',this)">전체</button>
+      <button class="tab" onclick="setTab('7',this)">최근 7일</button>
+      <button class="tab" onclick="setTab('14',this)">최근 14일</button>
+      <button class="tab" onclick="setTab('30',this)">최근 30일</button>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setFilter('all',this)">전체 상태</button>
+      <button class="filter-btn" onclick="setFilter('0',this)">🔴 미확인</button>
+      <button class="filter-btn" onclick="setFilter('1',this)">🔵 발주완료</button>
+      <button class="filter-btn" onclick="setFilter('2',this)">🟢 입고완료</button>
+    </div>
+  </div>
+  <div class="summary" id="summaryRow"></div>
+  <div class="list" id="itemList"></div>
+</div>
+
+</div><!-- /appBody -->
+
+<!-- 재발주 모달 -->
+<div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">상태 변경</div>
+    <div class="modal-item-name" id="modalName"></div>
+    <div class="modal-options">
+      <button class="modal-opt s0" onclick="setStatus(0)">🔴 미확인 — 아직 발주 전</button>
+      <button class="modal-opt s1" onclick="setStatus(1)">🔵 발주완료 — 발주 넣었음</button>
+      <button class="modal-opt s2" onclick="setStatus(2)">🟢 입고완료 — 재고 들어옴</button>
+    </div>
+    <div class="note-label">메모 (발주처, 입고 예정일 등)</div>
+    <textarea class="note-field" id="noteField" rows="2" placeholder="예) 5/7 광명도매 방문 시 픽업 예정"></textarea>
+    <button class="modal-save" onclick="saveModal()">저장</button>
+    <button class="modal-cancel" onclick="closeModal()">취소</button>
+  </div>
+</div>
+
+
+<script>
+// ══ 비밀번호 ══
+const PW_KEY = 'pg_manager_auth';
+const CORRECT_PW = '1234'; // ← 여기서 비밀번호 변경
+
+function checkPw() {
+  const input = document.getElementById('pwInput').value;
+  if (input === CORRECT_PW) {
+    sessionStorage.setItem(PW_KEY, '1');
+    document.getElementById('pwScreen').style.display = 'none';
+    document.getElementById('appBody').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('pwError').textContent = '비밀번호가 올바르지 않습니다.';
+    document.getElementById('pwInput').value = '';
+  }
+}
+
+window.onload = () => {
+  if (sessionStorage.getItem(PW_KEY) === '1') {
+    document.getElementById('pwScreen').style.display = 'none';
+    document.getElementById('appBody').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('pwInput').focus();
+  }
+};
+
+// ══ 데이터 ══
+const DAILY = [{"d": "2026-02-06", "s1": 64000, "s2": 0}, {"d": "2026-02-24", "s1": 4700, "s2": 0}, {"d": "2026-02-25", "s1": 4700, "s2": 0}, {"d": "2026-02-26", "s1": 165000, "s2": 0}, {"d": "2026-02-27", "s1": 295400, "s2": 0}, {"d": "2026-02-28", "s1": 359400, "s2": 0}, {"d": "2026-03-01", "s1": 351500, "s2": 0}, {"d": "2026-03-02", "s1": 401900, "s2": 0}, {"d": "2026-03-03", "s1": 935700, "s2": 0}, {"d": "2026-03-04", "s1": 687700, "s2": 0}, {"d": "2026-03-05", "s1": 300100, "s2": 0}, {"d": "2026-03-06", "s1": 286900, "s2": 0}, {"d": "2026-03-07", "s1": 240200, "s2": 0}, {"d": "2026-03-08", "s1": 270500, "s2": 0}, {"d": "2026-03-09", "s1": 242700, "s2": 0}, {"d": "2026-03-10", "s1": 196700, "s2": 0}, {"d": "2026-03-11", "s1": 240400, "s2": 0}, {"d": "2026-03-12", "s1": 225650, "s2": 0}, {"d": "2026-03-13", "s1": 211300, "s2": 0}, {"d": "2026-03-14", "s1": 257600, "s2": 0}, {"d": "2026-03-15", "s1": 256200, "s2": 0}, {"d": "2026-03-16", "s1": 194600, "s2": 0}, {"d": "2026-03-17", "s1": 234700, "s2": 0}, {"d": "2026-03-18", "s1": 190100, "s2": 0}, {"d": "2026-03-19", "s1": 195500, "s2": 0}, {"d": "2026-03-20", "s1": 339700, "s2": 0}, {"d": "2026-03-21", "s1": 314000, "s2": 0}, {"d": "2026-03-22", "s1": 301300, "s2": 0}, {"d": "2026-03-23", "s1": 233300, "s2": 0}, {"d": "2026-03-24", "s1": 242900, "s2": 0}, {"d": "2026-03-25", "s1": 299100, "s2": 0}, {"d": "2026-03-26", "s1": 231900, "s2": 0}, {"d": "2026-03-27", "s1": 288100, "s2": 0}, {"d": "2026-03-28", "s1": 392700, "s2": 0}, {"d": "2026-03-29", "s1": 293100, "s2": 0}, {"d": "2026-03-30", "s1": 207900, "s2": 0}, {"d": "2026-03-31", "s1": 238100, "s2": 0}, {"d": "2026-04-01", "s1": 286900, "s2": 0}, {"d": "2026-04-02", "s1": 296200, "s2": 0}, {"d": "2026-04-03", "s1": 307000, "s2": 0}, {"d": "2026-04-04", "s1": 407400, "s2": 0}, {"d": "2026-04-05", "s1": 303900, "s2": 0}, {"d": "2026-04-06", "s1": 305000, "s2": 0}, {"d": "2026-04-07", "s1": 253500, "s2": 0}, {"d": "2026-04-08", "s1": 337000, "s2": 0}, {"d": "2026-04-09", "s1": 115200, "s2": 0}, {"d": "2026-04-10", "s1": 299600, "s2": 612300}, {"d": "2026-04-11", "s1": 312000, "s2": 644300}, {"d": "2026-04-12", "s1": 459400, "s2": 642600}, {"d": "2026-04-13", "s1": 310000, "s2": 547600}, {"d": "2026-04-14", "s1": 313600, "s2": 360800}, {"d": "2026-04-15", "s1": 365000, "s2": 504500}, {"d": "2026-04-16", "s1": 296200, "s2": 451700}, {"d": "2026-04-17", "s1": 253400, "s2": 740100}, {"d": "2026-04-18", "s1": 353500, "s2": 631300}, {"d": "2026-04-19", "s1": 460500, "s2": 665300}, {"d": "2026-04-20", "s1": 624400, "s2": 861800}, {"d": "2026-04-21", "s1": 217200, "s2": 432900}, {"d": "2026-04-22", "s1": 225300, "s2": 460800}, {"d": "2026-04-23", "s1": 251600, "s2": 402100}, {"d": "2026-04-24", "s1": 257400, "s2": 623100}, {"d": "2026-04-25", "s1": 576900, "s2": 493300}, {"d": "2026-04-26", "s1": 238800, "s2": 443700}, {"d": "2026-04-27", "s1": 208500, "s2": 397700}, {"d": "2026-04-28", "s1": 180600, "s2": 506100}, {"d": "2026-04-29", "s1": 233100, "s2": 675100}, {"d": "2026-04-30", "s1": 270400, "s2": 698100}, {"d": "2026-05-01", "s1": 323100, "s2": 387700}, {"d": "2026-05-02", "s1": 272700, "s2": 345200}, {"d": "2026-05-03", "s1": 549100, "s2": 832800}];
+const ITEMS = [{"id": "50000 포켓몬스터 닌자스피너[box]", "name": "50000 포켓몬스터 닌자스피너[box]", "cat": "문구", "price": 50000, "lastSale": "2026-05-03", "totalSold": 1}, {"id": "18000 핑크래빗뷰티세트(세주)", "name": "18000 핑크래빗뷰티세트(세주)", "cat": "문구", "price": 18000, "lastSale": "2026-05-03", "totalSold": 1}, {"id": "80000 포켓몬 닌자스피너 스페셜카드", "name": "80000 포켓몬 닌자스피너 스페셜카드", "cat": "문구", "price": 80000, "lastSale": "2026-05-03", "totalSold": 1}, {"id": "50000 포켓몬카드 닌자스피너[box]", "name": "50000 포켓몬카드 닌자스피너[box]", "cat": "포켓몬카드", "price": 50000, "lastSale": "2026-05-03", "totalSold": 1}, {"id": "몬스터사이버트럭", "name": "몬스터사이버트럭", "cat": "문구", "price": 14000, "lastSale": "2026-05-02", "totalSold": 1}, {"id": "13000 월드베이스볼 야구놀이_9622 낱개팥매 1개입", "name": "13000 월드베이스볼 야구놀이_9622 낱개팥매 1개입", "cat": "문구", "price": 13000, "lastSale": "2026-05-02", "totalSold": 1}, {"id": "10000 와이드오픈필통_7467 낱개판매 1개입", "name": "10000 와이드오픈필통_7467 낱개판매 1개입", "cat": "문구", "price": 10000, "lastSale": "2026-05-01", "totalSold": 2}, {"id": "13000 포켓몬캐치볼세트(엠티코리아)", "name": "13000 포켓몬캐치볼세트(엠티코리아)", "cat": "문구", "price": 13000, "lastSale": "2026-05-01", "totalSold": 2}, {"id": "13000 포켓몬소프트원반(엠티코리아)", "name": "13000 포켓몬소프트원반(엠티코리아)", "cat": "문구", "price": 13000, "lastSale": "2026-04-30", "totalSold": 3}, {"id": "11000 프리미엄토미카05람보르기니무르시엘라고(오렌지)(토미카)", "name": "11000 프리미엄토미카05람보르기니무르시엘라고(오렌지)(토미카)", "cat": "문구", "price": 11000, "lastSale": "2026-04-30", "totalSold": 1}, {"id": "11000 프리미엄토미카06페라리F50(레드)(토미카)", "name": "11000 프리미엄토미카06페라리F50(레드)(토미카)", "cat": "문구", "price": 11000, "lastSale": "2026-04-30", "totalSold": 1}, {"id": "BOYNEXTDOOR (보이넥스트도어) - 5th EP 프레임반 [ 6종 SET]", "name": "BOYNEXTDOOR (보이넥스트도어) - 5th EP 프레임반 [ 6종 SET]", "cat": "아이돌", "price": 12800, "lastSale": "2026-04-28", "totalSold": 4}, {"id": "주술 고양이귀 플러쉬 랜덤키링", "name": "주술 고양이귀 플러쉬 랜덤키링", "cat": "문구", "price": 10000, "lastSale": "2026-04-28", "totalSold": 2}, {"id": "28000 지하철여행(정경유통)", "name": "28000 지하철여행(정경유통)", "cat": "문구", "price": 28000, "lastSale": "2026-04-27", "totalSold": 1}, {"id": "Y29 치킨말이 연골 140g", "name": "Y29 치킨말이 연골 140g", "cat": "강아지", "price": 10000, "lastSale": "2026-04-27", "totalSold": 1}, {"id": "17000 고고다이노변신공룡-렉스(슈퍼카)(주영)", "name": "17000 고고다이노변신공룡-렉스(슈퍼카)(주영)", "cat": "문구", "price": 17000, "lastSale": "2026-04-26", "totalSold": 1}, {"id": "캐치티니핑 테트로미노게임", "name": "캐치티니핑 테트로미노게임", "cat": "문구", "price": 12000, "lastSale": "2026-04-26", "totalSold": 1}, {"id": "헬로키티멜로디딸깍이키링", "name": "헬로키티멜로디딸깍이키링", "cat": "문구", "price": 10000, "lastSale": "2026-04-25", "totalSold": 3}, {"id": "10000 마그넷 터닝변신로봇_2043 낱개판매 1개입", "name": "10000 마그넷 터닝변신로봇_2043 낱개판매 1개입", "cat": "문구", "price": 10000, "lastSale": "2026-04-25", "totalSold": 3}, {"id": "캐치티니핑 내맘대로자석놀이", "name": "캐치티니핑 내맘대로자석놀이", "cat": "문구", "price": 26000, "lastSale": "2026-04-25", "totalSold": 1}, {"id": "미니어처향수 diptyq 3", "name": "미니어처향수 diptyq 3", "cat": "뷰티", "price": 10000, "lastSale": "2026-04-25", "totalSold": 1}, {"id": "10000 캐치티니핑-분장놀이(사뿐핑)(아이누리)", "name": "10000 캐치티니핑-분장놀이(사뿐핑)(아이누리)", "cat": "문구", "price": 10000, "lastSale": "2026-04-25", "totalSold": 1}, {"id": "14000 천사점토 140g", "name": "14000 천사점토 140g", "cat": "문구", "price": 14000, "lastSale": "2026-04-24", "totalSold": 2}, {"id": "10000 비움 매쉬 투포켓봉제필통_9249 낱개판매 1개입", "name": "10000 비움 매쉬 투포켓봉제필통_9249 낱개판매 1개입", "cat": "문구", "price": 10000, "lastSale": "2026-04-24", "totalSold": 1}, {"id": "10000 사고력캐치-다른숨은그림찾기", "name": "10000 사고력캐치-다른숨은그림찾기", "cat": "문구", "price": 10000, "lastSale": "2026-04-23", "totalSold": 2}, {"id": "10900 드림토미카SP-치이카와모몽가(토미카)", "name": "10900 드림토미카SP-치이카와모몽가(토미카)", "cat": "문구", "price": 10900, "lastSale": "2026-04-23", "totalSold": 1}, {"id": "10000 고급형 김수열 줄넘기", "name": "10000 고급형 김수열 줄넘기", "cat": "문구", "price": 10000, "lastSale": "2026-04-23", "totalSold": 1}, {"id": "미니어처향수 diptyq", "name": "미니어처향수 diptyq", "cat": "뷰티", "price": 10000, "lastSale": "2026-04-22", "totalSold": 2}, {"id": "미니어처향수 c no5", "name": "미니어처향수 c no5", "cat": "뷰티", "price": 10000, "lastSale": "2026-04-22", "totalSold": 3}, {"id": "10000 아이돌두배랜박(i)", "name": "10000 아이돌두배랜박(i)", "cat": "문구", "price": 10000, "lastSale": "2026-04-22", "totalSold": 2}, {"id": "15000 행운을주는마리모(블럭어항키트)(앨리스)", "name": "15000 행운을주는마리모(블럭어항키트)(앨리스)", "cat": "문구", "price": 15000, "lastSale": "2026-04-22", "totalSold": 1}, {"id": "미니어처향수 diptyq 2", "name": "미니어처향수 diptyq 2", "cat": "뷰티", "price": 10000, "lastSale": "2026-04-21", "totalSold": 1}, {"id": "IVE  -  EMPATHY [LOVED IVE ver.] (초판 : 카라비너특전판)", "name": "IVE  -  EMPATHY [LOVED IVE ver.] (초판 : 카라비너특전판)", "cat": "아이돌", "price": 20000, "lastSale": "2026-04-21", "totalSold": 1}, {"id": "11000 일러스트 하드 케이스 ver.3", "name": "11000 일러스트 하드 케이스 ver.3", "cat": "문구", "price": 11000, "lastSale": "2026-04-21", "totalSold": 1}, {"id": "10000 다이캐스트메탈미니카SV특수차시리즈(5p)(황용토이)", "name": "10000 다이캐스트메탈미니카SV특수차시리즈(5p)(황용토이)", "cat": "문구", "price": 10000, "lastSale": "2026-04-20", "totalSold": 3}, {"id": "미니어처향수 guc flora", "name": "미니어처향수 guc flora", "cat": "뷰티", "price": 10000, "lastSale": "2026-04-20", "totalSold": 3}, {"id": "아이브IVE 2ND ALBUM REVIVE+LOVED IVE ver 한정반", "name": "아이브IVE 2ND ALBUM REVIVE+LOVED IVE ver 한정반", "cat": "앨범", "price": 15000, "lastSale": "2026-04-20", "totalSold": 3}, {"id": "아이브 revive+", "name": "아이브 revive+", "cat": "아이돌", "price": 15000, "lastSale": "2026-04-20", "totalSold": 2}, {"id": "아이브 revive+ 2", "name": "아이브 revive+ 2", "cat": "아이돌", "price": 15000, "lastSale": "2026-04-20", "totalSold": 2}, {"id": "글러브캐치볼", "name": "글러브캐치볼", "cat": "문구", "price": 14000, "lastSale": "2026-04-19", "totalSold": 1}, {"id": "13000 김수열뉴골드플러스줄넘기(K-515)(에스와이)", "name": "13000 김수열뉴골드플러스줄넘기(K-515)(에스와이)", "cat": "문구", "price": 13000, "lastSale": "2026-04-19", "totalSold": 1}, {"id": "12000 김수열줄넘기 스마트명품 sm-100", "name": "12000 김수열줄넘기 스마트명품 sm-100", "cat": "문구", "price": 12000, "lastSale": "2026-04-19", "totalSold": 1}, {"id": "12000 뽀로로 미니게트링 버블건 _0066 낱개판매 1개입", "name": "12000 뽀로로 미니게트링 버블건 _0066 낱개판매 1개입", "cat": "문구", "price": 12000, "lastSale": "2026-04-19", "totalSold": 1}, {"id": "프리미엄토미카07람보르기니에센자SC", "name": "프리미엄토미카07람보르기니에센자SC", "cat": "문구", "price": 11000, "lastSale": "2026-04-17", "totalSold": 1}, {"id": "28000 공룡탐험(이종욱토이)", "name": "28000 공룡탐험(이종욱토이)", "cat": "문구", "price": 28000, "lastSale": "2026-04-16", "totalSold": 1}, {"id": "10000 빼꼼 24색 사출물감_2430 낱개판매 1개입", "name": "10000 빼꼼 24색 사출물감_2430 낱개판매 1개입", "cat": "문구", "price": 10000, "lastSale": "2026-04-13", "totalSold": 1}, {"id": "13000 M92F", "name": "13000 M92F", "cat": "문구", "price": 13000, "lastSale": "2026-04-13", "totalSold": 1}, {"id": "로기", "name": "로기", "cat": "문구", "price": 12000, "lastSale": "2026-04-13", "totalSold": 1}, {"id": "창의력캐치티니핑따라그리기", "name": "창의력캐치티니핑따라그리기", "cat": "문구", "price": 10000, "lastSale": "2026-04-12", "totalSold": 2}, {"id": "산리오 종이접기", "name": "산리오 종이접기", "cat": "문구", "price": 12000, "lastSale": "2026-04-12", "totalSold": 3}, {"id": "20000 로보카폴리-엠버변신로봇4인치(로이토이즈)", "name": "20000 로보카폴리-엠버변신로봇4인치(로이토이즈)", "cat": "문구", "price": 20000, "lastSale": "2026-04-12", "totalSold": 1}, {"id": "12000 꼬마버스타요-앨리스(미미월드)", "name": "12000 꼬마버스타요-앨리스(미미월드)", "cat": "문구", "price": 12000, "lastSale": "2026-04-12", "totalSold": 1}, {"id": "10000 행운을주는 마리모키우기", "name": "10000 행운을주는 마리모키우기", "cat": "문구", "price": 10000, "lastSale": "2026-04-12", "totalSold": 1}, {"id": "12000 파스텔 계산기 블루", "name": "12000 파스텔 계산기 블루", "cat": "문구", "price": 12000, "lastSale": "2026-04-11", "totalSold": 1}, {"id": "10000 집중력캐치-미로다른그림찾기", "name": "10000 집중력캐치-미로다른그림찾기", "cat": "문구", "price": 10000, "lastSale": "2026-04-06", "totalSold": 1}, {"id": "18000 하프의신나는인형뽑기(토이트론)", "name": "18000 하프의신나는인형뽑기(토이트론)", "cat": "문구", "price": 18000, "lastSale": "2026-04-05", "totalSold": 2}, {"id": "카피바라자동버블건", "name": "카피바라자동버블건", "cat": "문구", "price": 12000, "lastSale": "2026-04-04", "totalSold": 1}, {"id": "12500 121이치하라시소방국스크럼포스(토미카)", "name": "12500 121이치하라시소방국스크럼포스(토미카)", "cat": "문구", "price": 12500, "lastSale": "2026-03-29", "totalSold": 1}, {"id": "[면세]10000 수학머리깨우는스티커-도형숫자(애플비)", "name": "[면세]10000 수학머리깨우는스티커-도형숫자(애플비)", "cat": "문구", "price": 10000, "lastSale": "2026-03-29", "totalSold": 1}, {"id": "[면세]10000 집중력캐치-미로다른그림찾기(학산)", "name": "[면세]10000 집중력캐치-미로다른그림찾기(학산)", "cat": "문구", "price": 10000, "lastSale": "2026-03-29", "totalSold": 1}, {"id": "프린세스캐치티니핑6 뽀니핑피규어", "name": "프린세스캐치티니핑6 뽀니핑피규어", "cat": "문구", "price": 22500, "lastSale": "2026-03-28", "totalSold": 1}, {"id": "미니어처향수 jml peony", "name": "미니어처향수 jml peony", "cat": "뷰티", "price": 10000, "lastSale": "2026-03-26", "totalSold": 2}, {"id": "22000 헬로카봇턴업미스터리경찰차(올림포스)", "name": "22000 헬로카봇턴업미스터리경찰차(올림포스)", "cat": "문구", "price": 22000, "lastSale": "2026-03-26", "totalSold": 2}, {"id": "17000 고고다이노변신공룡-핑(구조비행기)(주영)", "name": "17000 고고다이노변신공룡-핑(구조비행기)(주영)", "cat": "문구", "price": 17000, "lastSale": "2026-03-26", "totalSold": 1}, {"id": "13000 핑크퐁베베핀스쿨버스(미카)", "name": "13000 핑크퐁베베핀스쿨버스(미카)", "cat": "문구", "price": 13000, "lastSale": "2026-03-22", "totalSold": 1}, {"id": "18000 시나모롤종치기게임(바니랜드)", "name": "18000 시나모롤종치기게임(바니랜드)", "cat": "문구", "price": 18000, "lastSale": "2026-03-20", "totalSold": 1}, {"id": "미니어처향수 yslr", "name": "미니어처향수 yslr", "cat": "뷰티", "price": 10000, "lastSale": "2026-03-19", "totalSold": 1}, {"id": "15000 더블X변신합체로봇 2가지색상(_5690 1박스 1개입", "name": "15000 더블X변신합체로봇 2가지색상(_5690 1박스 1개입", "cat": "문구", "price": 15000, "lastSale": "2026-03-18", "totalSold": 1}, {"id": "15000 몬타나 리미티드 축구공", "name": "15000 몬타나 리미티드 축구공", "cat": "문구", "price": 15000, "lastSale": "2026-03-15", "totalSold": 1}, {"id": "15000 타요3p미니카세트A_0106 낱개판매 1개입", "name": "15000 타요3p미니카세트A_0106 낱개판매 1개입", "cat": "문구", "price": 15000, "lastSale": "2026-03-14", "totalSold": 1}, {"id": "15000 잠만보 청소기_2685 낱개판매 1개입", "name": "15000 잠만보 청소기_2685 낱개판매 1개입", "cat": "문구", "price": 15000, "lastSale": "2026-03-11", "totalSold": 1}, {"id": "프린세스캐치티니핑6 하츄핑피규어", "name": "프린세스캐치티니핑6 하츄핑피규어", "cat": "문구", "price": 22500, "lastSale": "2026-03-07", "totalSold": 1}, {"id": "10000 투명이 24색 색연필세트_5209 낱개판매 1개입", "name": "10000 투명이 24색 색연필세트_5209 낱개판매 1개입", "cat": "문구", "price": 10000, "lastSale": "2026-03-05", "totalSold": 4}, {"id": "10800 12색 네임펜세트_2107 낱개판매 1개입", "name": "10800 12색 네임펜세트_2107 낱개판매 1개입", "cat": "문구", "price": 10800, "lastSale": "2026-03-05", "totalSold": 3}, {"id": "13000 김수열줄넘기 골드플러스 K-515", "name": "13000 김수열줄넘기 골드플러스 K-515", "cat": "문구", "price": 13000, "lastSale": "2026-03-05", "totalSold": 1}, {"id": "프린세스캐치티니핑6 사뿐핑피규어", "name": "프린세스캐치티니핑6 사뿐핑피규어", "cat": "문구", "price": 22500, "lastSale": "2026-03-04", "totalSold": 1}, {"id": "14000 뽀로로 사이렌경찰차_2897 낱개판매 1개입", "name": "14000 뽀로로 사이렌경찰차_2897 낱개판매 1개입", "cat": "문구", "price": 14000, "lastSale": "2026-03-03", "totalSold": 1}, {"id": "11000 일러스트 하드 케이스_2257 낱개판매 1개입", "name": "11000 일러스트 하드 케이스_2257 낱개판매 1개입", "cat": "문구", "price": 11000, "lastSale": "2026-03-03", "totalSold": 1}, {"id": "10000 미니 보이스체인지 확성기", "name": "10000 미니 보이스체인지 확성기", "cat": "문구", "price": 10000, "lastSale": "2026-03-03", "totalSold": 1}, {"id": "10000 펀치팡팡", "name": "10000 펀치팡팡", "cat": "문구", "price": 10000, "lastSale": "2026-03-01", "totalSold": 1}, {"id": "10000 LED바다새우 키우기", "name": "10000 LED바다새우 키우기", "cat": "문구", "price": 10000, "lastSale": "2026-02-27", "totalSold": 1}, {"id": "jkuut", "name": "jkuut", "cat": "문구", "price": 16000, "lastSale": "2026-02-06", "totalSold": 1}];
+
+// 날짜별 map
+const dailyMap = {};
+DAILY.forEach(d => { dailyMap[d.d] = d; });
+
+// ══ 뷰 전환 ══
+let currentView = 'sales';
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.querySelectorAll('.tab-bar-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tb' + (v==='sales'?'Sales':'Reorder')).classList.add('active');
+  currentView = v;
+}
+
+// ══ 매출 트래커 ══
+function fmt(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + '백만';
+  return n.toLocaleString() + '원';
+}
+function fmtFull(n) { return n.toLocaleString() + '원'; }
+
+let calYear, calMonth, calStore = 'both';
+
+function initSales() {
+  const today = new Date();
+  calYear = today.getFullYear(); calMonth = today.getMonth();
+
+  // 어제
+  const yest = new Date(today); yest.setDate(today.getDate()-1);
+  const yestStr = yest.toISOString().slice(0,10);
+  const yestData = dailyMap[yestStr] || {s1:0, s2:0};
+
+  // 이번 달
+  const ym = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const thisMonth = DAILY.filter(d => d.d.startsWith(ym));
+  const s1Month = thisMonth.reduce((a,d)=>a+d.s1,0);
+  const s2Month = thisMonth.reduce((a,d)=>a+d.s2,0);
+  const days = thisMonth.length || 1;
+
+  // 전체 누적
+  const totalS1 = DAILY.reduce((a,d)=>a+d.s1,0);
+  const totalS2 = DAILY.reduce((a,d)=>a+d.s2,0);
+  const minDate = DAILY[0]?.d || '';
+  const maxDate = DAILY[DAILY.length-1]?.d || '';
+
+  document.getElementById('totalAll').textContent = fmtFull(totalS1+totalS2);
+  document.getElementById('totalPeriod').textContent = `${minDate} ~ ${maxDate}`;
+  document.getElementById('s1Yesterday').textContent = fmtFull(yestData.s1);
+  document.getElementById('s2Yesterday').textContent = fmtFull(yestData.s2);
+  document.getElementById('s1AvgDay').textContent = fmtFull(Math.round(s1Month/days));
+  document.getElementById('s2AvgDay').textContent = fmtFull(Math.round(s2Month/days));
+  document.getElementById('s1MonthTotal').textContent = fmtFull(s1Month);
+  document.getElementById('s2MonthTotal').textContent = fmtFull(s2Month);
+
+  const today2 = new Date(); 
+  document.getElementById('appDate').textContent = 
+    `${today2.getMonth()+1}/${today2.getDate()} 기준`;
+
+  renderCalendar();
+}
+
+function setCalStore(store, el) {
+  calStore = store;
+  document.querySelectorAll('.csf-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderCalendar();
+}
+
+function changeMonth(delta) {
+  calMonth += delta;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const ymStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+  document.getElementById('calMonth').textContent =
+    `${calYear}년 ${calMonth+1}월`;
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const lastDate = new Date(calYear, calMonth+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // 이번 달 최대값 (색 스케일용)
+  const monthSales = [];
+  for (let d=1; d<=lastDate; d++) {
+    const ds = `${ymStr}-${String(d).padStart(2,'0')}`;
+    const row = dailyMap[ds];
+    let v = 0;
+    if (row) v = calStore==='s1' ? row.s1 : calStore==='s2' ? row.s2 : row.s1+row.s2;
+    monthSales.push(v);
+  }
+  const maxSale = Math.max(...monthSales, 1);
+  let monthTotal = monthSales.reduce((a,b)=>a+b,0);
+
+  const grid = document.getElementById('calGrid');
+  let html = '';
+
+  // 빈 셀
+  for (let i=0; i<firstDay; i++) html += '<div class="cal-cell empty"></div>';
+
+  for (let d=1; d<=lastDate; d++) {
+    const ds = `${ymStr}-${String(d).padStart(2,'0')}`;
+    const row = dailyMap[ds];
+    const dayDate = new Date(calYear, calMonth, d);
+    const dow = dayDate.getDay();
+    const isToday = dayDate.getTime() === today.getTime();
+    const isFuture = dayDate > today;
+
+    let v = 0, hasSales = false;
+    if (row) {
+      v = calStore==='s1' ? row.s1 : calStore==='s2' ? row.s2 : row.s1+row.s2;
+      hasSales = v > 0;
+    }
+
+    const ratio = maxSale > 0 ? v / maxSale : 0;
+    let bgClass = isFuture ? 'no-data' : (hasSales ? (ratio>0.7?'has-sales very-high':ratio>0.4?'has-sales high':'has-sales') : '');
+    const dowClass = dow===0?'sun':dow===6?'sat':'';
+    const todayClass = isToday ? 'today' : '';
+
+    const salesLabel = hasSales ? fmt(v) : (isFuture ? '' : '');
+
+    html += `<div class="cal-cell ${bgClass} ${dowClass} ${todayClass}">
+      <span class="cal-day">${d}</span>
+      ${hasSales ? `<span class="cal-sales">${salesLabel}</span>` : ''}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+
+  const storeLabel = calStore==='s1'?'1호점':calStore==='s2'?'2호점':'합산';
+  document.getElementById('calTotalLabel').textContent = `${calMonth+1}월 ${storeLabel} 합계`;
+  document.getElementById('calTotal').textContent = fmtFull(monthTotal);
+}
+
+// ══ 재발주 트래커 ══
+const STORAGE_KEY = 'playground_reorder_v1';
+let roState = {};
+let currentTab = 'all', currentFilter = 'all', activeItemId = null;
+
+function loadState() {
+  try { roState = JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch(e) { roState={}; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(roState)); }
+function getItemState(id) { return roState[id] || {status:0, note:'', updatedAt:''}; }
+
+function daysSince(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.floor((today - new Date(dateStr)) / 86400000);
+}
+
+function setTab(val, el) {
+  currentTab = val;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+}
+function setFilter(val, el) {
+  currentFilter = val;
+  document.querySelectorAll('.filter-btn').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+}
+
+const STATUS_LABELS = ['🔴 미확인','🔵 발주완료','🟢 입고완료'];
+const STATUS_CLASSES = ['s0','s1','s2'];
+
+function renderList() {
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  const tabDays = currentTab==='all' ? 9999 : parseInt(currentTab);
+  const filtered = ITEMS.filter(item => {
+    if (daysSince(item.lastSale) > tabDays) return false;
+    const st = getItemState(item.id).status;
+    if (currentFilter!=='all' && st!==parseInt(currentFilter)) return false;
+    if (query && !item.name.toLowerCase().includes(query) && !item.cat.toLowerCase().includes(query)) return false;
+    return true;
+  });
+  const all14 = ITEMS.filter(i => daysSince(i.lastSale)<=14);
+  const uc = all14.filter(i=>getItemState(i.id).status===0).length;
+  const pc = all14.filter(i=>getItemState(i.id).status===1).length;
+  const dc = all14.filter(i=>getItemState(i.id).status===2).length;
+  document.getElementById('summaryRow').innerHTML = `
+    <div class="sum-card urgent"><div class="num">${uc}</div><div class="lbl">미확인(14일)</div></div>
+    <div class="sum-card pending"><div class="num">${pc}</div><div class="lbl">발주완료</div></div>
+    <div class="sum-card done"><div class="num">${dc}</div><div class="lbl">입고완료</div></div>
+    <div class="sum-card"><div class="num">${ITEMS.length}</div><div class="lbl">전체 상품</div></div>`;
+  const list = document.getElementById('itemList');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div>해당 상품이 없어요</div></div>';
+    return;
+  }
+  list.innerHTML = filtered.map((item, idx) => {
+    const days = daysSince(item.lastSale);
+    const st = getItemState(item.id);
+    const dc2 = days<=3?'days-urgent':days<=7?'days-warn':'days-ok';
+    const dl = days===0?'오늘':`${days}일 전`;
+    const globalIdx = ITEMS.indexOf(item);
+    return `<div class="item-card status-${st.status}" onclick="openModalByIdx(${globalIdx})">
+      <div class="card-top">
+        <div class="item-name">${item.name}</div>
+        <button class="status-btn ${STATUS_CLASSES[st.status]}" onclick="event.stopPropagation();quickCycleByIdx(${globalIdx})">${STATUS_LABELS[st.status]}</button>
+      </div>
+      <div class="card-meta">
+        <span class="tag">${item.cat}</span>
+        <span class="tag price">${item.price.toLocaleString()}원</span>
+        <span class="tag ${dc2}">📅 ${dl} 판매</span>
+        ${item.totalSold>1?`<span class="tag">누적 ${item.totalSold}회</span>`:''}
+      </div>
+      ${st.note?`<div class="order-info visible">📝 ${st.note}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function quickCycle(id) {
+  const st = getItemState(id);
+  roState[id] = {...st, status:(st.status+1)%3, updatedAt:new Date().toISOString()};
+  saveState(); renderList();
+}
+function quickCycleByIdx(idx) { quickCycle(ITEMS[idx].id); }
+function openModalByIdx(idx) { openModal(ITEMS[idx].id); }
+function openModal(id) {
+  activeItemId = id;
+  const item = ITEMS.find(i=>i.id===id);
+  const st = getItemState(id);
+  document.getElementById('modalName').textContent = item.name;
+  document.getElementById('noteField').value = st.note||'';
+  document.getElementById('modalBg').classList.add('open');
+}
+function setStatus(s) {
+  if (!activeItemId) return;
+  roState[activeItemId] = {...getItemState(activeItemId), status:s, updatedAt:new Date().toISOString()};
+  saveState();
+}
+function saveModal() {
+  if (!activeItemId) return;
+  const note = document.getElementById('noteField').value.trim();
+  roState[activeItemId] = {...getItemState(activeItemId), note, updatedAt:new Date().toISOString()};
+  saveState(); closeModal(); renderList();
+}
+function closeModal(e) {
+  if (e && e.target!==document.getElementById('modalBg')) return;
+  document.getElementById('modalBg').classList.remove('open');
+  activeItemId = null;
+}
+
+function initApp() {
+  loadState();
+  initSales();
+  renderList();
+}
+</script>
+</body>
+</html>
