@@ -734,8 +734,7 @@ function switchView(v){
 }
 // ══ 매출 트래커 ══
 function fmt(n){
-  if (n >= 1000000) return (n/1000000).toFixed(1) + '백만';
-  return n.toLocaleString() + '원';
+  return n.toLocaleString();
 }
 function fmtFull(n){ return n.toLocaleString() + '원'; }
 let calYear, calMonth, calStore = 'both';
