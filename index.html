@@ -1966,6 +1966,46 @@ function subjectMatchesName(name, sub){
   return false;
 }
 
+function aggregateSubject(agg, sub){
+  let totalQ = 0, totalS = 0;
+  const byPrice = {};
+  for (const n in agg) {
+    if (!subjectMatchesName(n, sub)) continue;
+    const price = (PRODUCTS[n] && PRODUCTS[n].price) || 0;
+    totalQ += agg[n].q;
+    totalS += agg[n].s;
+    if (!byPrice[price]) byPrice[price] = { q: 0, s: 0 };
+    byPrice[price].q += agg[n].q;
+    byPrice[price].s += agg[n].s;
+  }
+  return { totalQ, totalS, byPrice };
+}
+
+function isPokemonSubject(sub){
+  return sub && normalizeSubjectText(sub.value) === '포켓몬카드';
+}
+
+function pokemonQtyAnswer(period, store, sLabel, agg, sub){
+  const summary = aggregateSubject(agg, sub);
+  let singleQ = 0, singleS = 0, boxQ = 0, boxS = 0, otherQ = 0, otherS = 0;
+  for (const priceText in summary.byPrice) {
+    const price = Number(priceText);
+    const row = summary.byPrice[priceText];
+    if (price >= 20000) {
+      boxQ += row.q; boxS += row.s;
+    } else if (price >= 1000) {
+      singleQ += row.q; singleS += row.s;
+    } else {
+      otherQ += row.q; otherS += row.s;
+    }
+  }
+  let text = period.label + sLabel + ' 포켓몬카드 총 ' + summary.totalQ + '개 / ' + KRWfmt(summary.totalS) + '원이에용.'
+    + '\n낱개/팩(1,000원~19,999원): ' + singleQ + '개 / ' + KRWfmt(singleS) + '원'
+    + '\n박스(20,000원 이상): ' + boxQ + '개 / ' + KRWfmt(boxS) + '원';
+  if (otherQ > 0) text += '\n기타(1,000원 미만): ' + otherQ + '개 / ' + KRWfmt(otherS) + '원';
+  return { text };
+}
+
 function aggregate(period, store){
   const result = {};
   const sources = [];
@@ -2080,8 +2120,7 @@ function handleRanking(q){
   const sub = resolveSubject(cleaned);
   const agg = aggregate(period, store || 'all');
   let list = Object.entries(agg).map(([n, v]) => ({ n: n, q: v.q, s: v.s, cat: (PRODUCTS[n] && PRODUCTS[n].cat) || '' }));
-  if (sub && sub.type === 'cat') list = list.filter(r => r.cat === sub.value);
-  else if (sub && sub.type === 'keyword') list = list.filter(r => subjectMatchesName(r.n, sub));
+  if (sub) list = list.filter(r => subjectMatchesName(r.n, sub));
   list.sort((a,b) => byRevenue ? b.s - a.s : b.q - a.q);
   list = list.slice(0, topN);
   if (list.length === 0) return { text: period.label + ' 해당 조건 판매 내역이 없어용.' };
@@ -2126,10 +2165,10 @@ function handleAggregate(q){
   if (/마지막\s*판매/.test(q)) return null;
   if (/(vs|대비|비교|매장별)/i.test(q)) return null;
   const period = extractPeriod(q);
-  const cleaned = q.replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|매출|수량|얼마|몇\s*개|개|판매량|매장|호점|철산|푸르지오|양|전체|합계|\d+\s*월/gi, '').trim();
+  const cleaned = q.replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|매출|수량|얼마|몇\s*개|개|판매량|판매|매장|호점|철산|푸르지오|양|전체|합계|\d+\s*월/gi, '').trim();
   const sub = resolveSubject(cleaned);
   if (!sub) {
-    const r = resolveStore(q, true);
+    const r = resolveStore(q, false);
     if (r.autoMsg) return { text: r.autoMsg };
     const t = dailyTotal(period, r.store);
     const sLabel = r.store === 's1' ? '1호점' : (r.store === 's2' ? '2호점' : '양 매장');
@@ -2137,16 +2176,13 @@ function handleAggregate(q){
   }
   const { store } = resolveStore(q, false);
   const agg = aggregate(period, store || 'all');
-  let totalQ = 0, totalS = 0;
-  for (const n in agg) {
-    const p = PRODUCTS[n] || {};
-    if (!subjectMatchesName(n, sub)) continue;
-    totalQ += agg[n].q; totalS += agg[n].s;
-  }
+  const summary = aggregateSubject(agg, sub);
+  let totalQ = summary.totalQ, totalS = summary.totalS;
   const sLabel = store === 's1' ? ' 1호점' : (store === 's2' ? ' 2호점' : '');
   if (totalQ === 0) return { text: period.label + sLabel + ' ' + sub.value + ' 판매 내역이 없어용.' };
   const askQty = /몇\s*개|수량|판매량/.test(q) && !/매출|얼마/.test(q);
   const askRev = /매출|얼마/.test(q) && !/몇\s*개|수량|판매량/.test(q);
+  if (askQty && isPokemonSubject(sub)) return pokemonQtyAnswer(period, store, sLabel, agg, sub);
   if (askQty) return { text: period.label + sLabel + ' ' + sub.value + ' ' + totalQ + '개 팔렸어용.' };
   if (askRev) return { text: period.label + sLabel + ' ' + sub.value + ' 매출 ' + KRWfmt(totalS) + '원이에용.' };
   return { text: period.label + sLabel + ' ' + sub.value + ': ' + totalQ + '개 / ' + KRWfmt(totalS) + '원이에용.' };
