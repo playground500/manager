@@ -1920,22 +1920,40 @@ function resolveStore(q, sensitive){
   return { store: null, autoMsg: '어느 매장 기준일까용? (1호점 / 2호점 / 양 매장)' };
 }
 
+function normalizeSubjectText(text){
+  return String(text || '').replace(/\s+/g, '').replace(/[?？!！.,。~]/g, '');
+}
+
 function resolveSubject(token){
   if (!token) return null;
-  token = token.trim();
+  token = token.trim().replace(/[?？!！.,。~]+$/g, '').trim();
   if (!token) return null;
-  const normToken = token.replace(/\s+/g, '');
+  const normToken = normalizeSubjectText(token);
+  const matched = [];
+  for (const name in PRODUCTS) {
+    const normName = normalizeSubjectText(name);
+    if (name.includes(token) || normName.includes(normToken)) matched.push(name);
+  }
+  if (normToken === '포켓몬카드' && matched.length > 0) return { type: 'keyword', value: token, products: matched };
   const cats = knownCategories();
   if (cats.includes(token)) return { type: 'cat', value: token };
   const catHit = cats.find(c => c.includes(token) || token.includes(c) || c.replace(/\s+/g, '').includes(normToken) || normToken.includes(c.replace(/\s+/g, '')));
   if (catHit) return { type: 'cat', value: catHit };
-  const matched = [];
-  for (const name in PRODUCTS) {
-    const normName = name.replace(/\s+/g, '');
-    if (name.includes(token) || normName.includes(normToken)) matched.push(name);
-  }
   if (matched.length > 0) return { type: 'keyword', value: token, products: matched };
   return null;
+}
+
+function subjectMatchesName(name, sub){
+  if (!sub) return true;
+  const p = PRODUCTS[name] || {};
+  if (sub.type === 'cat') return p.cat === sub.value;
+  if (sub.type === 'keyword') {
+    if (sub.products && sub.products.includes(name)) return true;
+    const normName = normalizeSubjectText(name);
+    const normValue = normalizeSubjectText(sub.value);
+    return name.includes(sub.value) || normName.includes(normValue);
+  }
+  return false;
 }
 
 function aggregate(period, store){
@@ -2053,7 +2071,7 @@ function handleRanking(q){
   const agg = aggregate(period, store || 'all');
   let list = Object.entries(agg).map(([n, v]) => ({ n: n, q: v.q, s: v.s, cat: (PRODUCTS[n] && PRODUCTS[n].cat) || '' }));
   if (sub && sub.type === 'cat') list = list.filter(r => r.cat === sub.value);
-  else if (sub && sub.type === 'keyword') list = list.filter(r => r.n.includes(sub.value));
+  else if (sub && sub.type === 'keyword') list = list.filter(r => subjectMatchesName(r.n, sub));
   list.sort((a,b) => byRevenue ? b.s - a.s : b.q - a.q);
   list = list.slice(0, topN);
   if (list.length === 0) return { text: period.label + ' 해당 조건 판매 내역이 없어용.' };
@@ -2076,8 +2094,7 @@ function handleStoreCompare(q){
     const r = {};
     for (const n in agg) {
       const p = PRODUCTS[n] || {};
-      if (sub.type === 'cat' && p.cat === sub.value) r[n] = agg[n];
-      else if (sub.type === 'keyword' && n.includes(sub.value)) r[n] = agg[n];
+      if (subjectMatchesName(n, sub)) r[n] = agg[n];
     }
     return r;
   };
@@ -2113,8 +2130,7 @@ function handleAggregate(q){
   let totalQ = 0, totalS = 0;
   for (const n in agg) {
     const p = PRODUCTS[n] || {};
-    if (sub.type === 'cat' && p.cat !== sub.value) continue;
-    if (sub.type === 'keyword' && !n.includes(sub.value)) continue;
+    if (!subjectMatchesName(n, sub)) continue;
     totalQ += agg[n].q; totalS += agg[n].s;
   }
   const sLabel = store === 's1' ? ' 1호점' : (store === 's2' ? ' 2호점' : '');
