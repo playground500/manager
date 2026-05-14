@@ -124,6 +124,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .item-card.status-0 { border-left-color: #ff3b30; }
 .item-card.status-1 { border-left-color: #007aff; }
 .item-card.status-2 { border-left-color: #34c759; opacity: .7; }
+.item-card.status-3 { border-left-color: #8e8e93; opacity: .78; }
+.item-card.status-4 { border-left-color: #af52de; opacity: .72; }
+.item-card.status-5 { border-left-color: #ff9500; }
 .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .item-name { font-size: 14px; font-weight: 600; line-height: 1.35; flex: 1; }
 .status-btn { flex-shrink: 0; padding: 5px 12px; border-radius: 20px; font-size: 12px;
@@ -131,6 +134,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .status-btn.s0 { background: #fff0ef; color: #ff3b30; }
 .status-btn.s1 { background: #e8f0fe; color: #007aff; }
 .status-btn.s2 { background: #e8f7ee; color: #34c759; }
+.status-btn.s3 { background: #f2f2f7; color: #636366; }
+.status-btn.s4 { background: #f7edff; color: #af52de; }
+.status-btn.s5 { background: #fff4e5; color: #c06b00; }
 .card-meta { display: flex; gap: 8px; align-items: center; margin-top: 7px; flex-wrap: wrap; }
 .tag { font-size: 11px; padding: 3px 8px; border-radius: 8px; background: #f2f2f7; color: #636366; font-weight: 500; }
 .tag.price { background: #fff8e7; color: #b5830a; }
@@ -138,6 +144,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .tag.days-warn { background: #fff8e7; color: #b5830a; }
 .tag.days-ok { background: #f2f2f7; color: #86868b; }
 .tag.rank { background: #1d1d1f; color: #fff; }
+.priority-line { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.item-detail { margin-top:9px; display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.detail-cell { background:#f7f7f9; border-radius:9px; padding:8px 9px; min-height:48px; }
+.detail-cell .k { font-size:10px; color:#86868b; font-weight:700; }
+.detail-cell .v { margin-top:3px; font-size:13px; color:#1d1d1f; font-weight:700; line-height:1.25; }
+.detail-cell.wide { grid-column:1 / -1; }
 .order-info { margin-top: 8px; padding: 8px 10px; background: #f5f5f7; border-radius: 8px;
                font-size: 12px; color: #636366; display: none; }
 .order-info.visible { display: block; }
@@ -155,6 +167,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .modal-opt.s0 { background: #fff0ef; color: #ff3b30; }
 .modal-opt.s1 { background: #e8f0fe; color: #007aff; }
 .modal-opt.s2 { background: #e8f7ee; color: #34c759; }
+.modal-opt.s3 { background: #f2f2f7; color: #636366; }
+.modal-opt.s4 { background: #f7edff; color: #af52de; }
+.modal-opt.s5 { background: #fff4e5; color: #c06b00; }
 .modal-cancel { margin-top: 8px; width: 100%; padding: 14px; border-radius: 12px; border: none; background: #f2f2f7; font-size: 15px; font-weight: 600; cursor: pointer; }
 .note-label { font-size: 13px; font-weight: 600; color: #636366; margin: 14px 0 6px; }
 .note-field { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid #e0e0e0; font-size: 14px; font-family: inherit; outline: none; resize: none; }
@@ -587,6 +602,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       <button class="filter-btn" onclick="setFilter('0',this)">🔴 미확인</button>
       <button class="filter-btn" onclick="setFilter('1',this)">🔵 발주완료</button>
       <button class="filter-btn" onclick="setFilter('2',this)">🟢 입고완료</button>
+      <button class="filter-btn" onclick="setFilter('3',this)">⚪ 재고충분</button>
+      <button class="filter-btn" onclick="setFilter('4',this)">🟣 안 살 예정</button>
+      <button class="filter-btn" onclick="setFilter('5',this)">🟠 보류</button>
     </div>
   </div>
   <div class="summary" id="summaryRow"></div>
@@ -673,9 +691,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       <button class="modal-opt s0" onclick="setStatus(0)">🔴 미확인 — 아직 발주 전</button>
       <button class="modal-opt s1" onclick="setStatus(1)">🔵 발주완료 — 발주 넣었음</button>
       <button class="modal-opt s2" onclick="setStatus(2)">🟢 입고완료 — 재고 들어옴</button>
+      <button class="modal-opt s3" onclick="setStatus(3)">⚪ 재고충분 — 지금은 발주 안 해도 됨</button>
+      <button class="modal-opt s4" onclick="setStatus(4)">🟣 안 살 예정 — 당분간 추천에서 처리됨</button>
+      <button class="modal-opt s5" onclick="setStatus(5)">🟠 보류 — 남편/아내 확인 필요</button>
     </div>
-    <div class="note-label">메모 (발주처, 입고 예정일 등)</div>
-    <textarea class="note-field" id="noteField" rows="2" placeholder="예) 5/7 광명도매 방문 시 픽업 예정"></textarea>
+    <div class="note-label">메모 (발주처, 입고 예정일, 확인자 등)</div>
+    <textarea class="note-field" id="noteField" rows="2" placeholder="예) 남편 확인 / 재고 충분 / 5월 말까지 보류"></textarea>
     <button class="modal-save" onclick="saveModal()">저장</button>
     <button class="modal-cancel" onclick="closeModal()">취소</button>
   </div>
@@ -998,8 +1019,9 @@ function setFilter(val, el){
   el.classList.add('active');
   renderList();
 }
-const STATUS_LABELS = ['🔴 미확인', '🔵 발주완료', '🟢 입고완료'];
-const STATUS_CLASSES = ['s0', 's1', 's2'];
+const STATUS_LABELS = ['🔴 미확인', '🔵 발주완료', '🟢 입고완료', '⚪ 재고충분', '🟣 안 살 예정', '🟠 보류'];
+const STATUS_CLASSES = ['s0', 's1', 's2', 's3', 's4', 's5'];
+const CLOSED_STATUSES = new Set([2, 3, 4]);
 const TIER_LABELS = {urgent:'1순위 확인', recommend:'2순위 확인', watch:'관찰'};
 const TIER_CLASSES = {urgent:'days-urgent', recommend:'days-warn', watch:'days-ok'};
 
@@ -1013,16 +1035,18 @@ function renderList(){
     return true;
   }
 );
-  const urgentCount = ITEMS.filter(i => i.tier === 'urgent' && getItemState(i.id).status !== 2).length;
-  const recommendCount = ITEMS.filter(i => i.tier === 'recommend' && getItemState(i.id).status !== 2).length;
-  const watchCount = ITEMS.filter(i => i.tier === 'watch' && getItemState(i.id).status !== 2).length;
-  const doneCount = ITEMS.filter(i=>getItemState(i.id).status===2).length;
+  const urgentCount = ITEMS.filter(i => i.tier === 'urgent' && !CLOSED_STATUSES.has(getItemState(i.id).status)).length;
+  const recommendCount = ITEMS.filter(i => i.tier === 'recommend' && !CLOSED_STATUSES.has(getItemState(i.id).status)).length;
+  const watchCount = ITEMS.filter(i => i.tier === 'watch' && !CLOSED_STATUSES.has(getItemState(i.id).status)).length;
+  const pendingCount = ITEMS.filter(i=>getItemState(i.id).status===5).length;
+  const doneCount = ITEMS.filter(i=>CLOSED_STATUSES.has(getItemState(i.id).status)).length;
   document.getElementById('summaryRow').innerHTML = `
     <div class="sum-card total"><div class="num">${ITEMS.length}</div><div class="lbl">전체 후보</div></div>
     <div class="sum-card urgent"><div class="num">${urgentCount}</div><div class="lbl">1순위</div></div>
     <div class="sum-card pending"><div class="num">${recommendCount}</div><div class="lbl">2순위</div></div>
     <div class="sum-card"><div class="num">${watchCount}</div><div class="lbl">관찰</div></div>
-    <div class="sum-card done"><div class="num">${doneCount}</div><div class="lbl">입고완료</div></div>`;
+    <div class="sum-card"><div class="num">${pendingCount}</div><div class="lbl">보류</div></div>
+    <div class="sum-card done"><div class="num">${doneCount}</div><div class="lbl">처리완료</div></div>`;
   const list = document.getElementById('itemList');
   if (!filtered.length){
     list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div>해당 상품이 없어요</div></div>';
@@ -1037,22 +1061,25 @@ list.innerHTML = filtered.map((item, idx) =>{
     const tierLabel = TIER_LABELS[item.tier] || '발주 후보';
     const tierClass = TIER_CLASSES[item.tier] || 'days-ok';
     const rankLabel = `추천 ${globalIdx + 1}위`;
+    const statusClass = STATUS_CLASSES[st.status] || 's0';
+    const statusLabel = STATUS_LABELS[st.status] || STATUS_LABELS[0];
     return `<div class="item-card status-${st.status}" onclick="openModalByIdx(${globalIdx})">
       <div class="card-top">
         <div class="item-name">${item.name}</div>
-        <button class="status-btn ${STATUS_CLASSES[st.status]}" onclick="event.stopPropagation();quickCycleByIdx(${globalIdx})">${STATUS_LABELS[st.status]}</button>
+        <button class="status-btn ${statusClass}" onclick="event.stopPropagation();quickCycleByIdx(${globalIdx})">${statusLabel}</button>
       </div>
-      <div class="card-meta">
+      <div class="priority-line">
         <span class="tag rank">${rankLabel}</span>
         <span class="tag ${tierClass}">${tierLabel}</span>
         <span class="tag">${item.cat}</span>
         <span class="tag price">${item.price.toLocaleString()}원</span>
-        <span class="tag ${dc2}">📅 ${dl}판매</span>
-        <span class="tag">3일 ${item.q3||0}개</span>
-        <span class="tag">7일 ${item.q7||0}개</span>
-        <span class="tag">14일 ${item.q14||0}개</span>
-        <span class="tag">1호점 ${item.s1q14||0} / 2호점 ${item.s2q14||0}</span>
-        ${item.s14>0?`<span class="tag">14일 ${item.s14.toLocaleString()}원</span>`:''}</div>
+      </div>
+      <div class="item-detail">
+        <div class="detail-cell"><div class="k">최근 판매</div><div class="v">${dl}</div></div>
+        <div class="detail-cell"><div class="k">최근 판매량</div><div class="v">3일 ${item.q3||0} · 7일 ${item.q7||0} · 14일 ${item.q14||0}개</div></div>
+        <div class="detail-cell"><div class="k">지점 흐름</div><div class="v">1호점 ${item.s1q14||0} / 2호점 ${item.s2q14||0}</div></div>
+        <div class="detail-cell"><div class="k">14일 매출</div><div class="v">${(item.s14||0).toLocaleString()}원</div></div>
+      </div>
       <div class="order-info visible">우선 확인 이유: ${item.reason || '최근 판매 흐름 확인'} · 추천점수 ${item.score || 0}</div>
       ${st.note?`<div class="order-info visible">📝 ${st.note}</div>`:''}</div>`;
   }
@@ -1060,7 +1087,9 @@ list.innerHTML = filtered.map((item, idx) =>{
 }
 function quickCycle(id){
   const st = getItemState(id);
-  roState[id] = {...st, status:(st.status+1)%3, updatedAt:new Date().toISOString()};
+  const quickOrder = [0, 1, 2, 0];
+  const current = quickOrder.includes(st.status) ? st.status : 0;
+  roState[id] = {...st, status:quickOrder[quickOrder.indexOf(current)+1], updatedAt:new Date().toISOString()};
   saveState(); renderList();
 }
 function quickCycleByIdx(idx){ quickCycle(ITEMS[idx].id); }
