@@ -129,6 +129,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .item-card.status-5 { border-left-color: #ff9500; }
 .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .item-name { font-size: 14px; font-weight: 600; line-height: 1.35; flex: 1; }
+.card-subline { margin-top: 4px; font-size: 12px; color: #86868b; font-weight: 650; line-height: 1.35; }
+.item-extra { display: none; }
+.item-card.open .item-extra { display: block; }
 .status-btn { flex-shrink: 0; padding: 5px 12px; border-radius: 20px; font-size: 12px;
                font-weight: 600; border: none; cursor: pointer; transition: all .2s; white-space: nowrap; }
 .status-btn.s0 { background: #fff0ef; color: #ff3b30; }
@@ -488,6 +491,46 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 [data-theme='dark'] .chat-input-row input { background:#1a2622; border-color:#2a3833; color:#dde; }
 .chat-input-row button { padding:0 18px; border:none; background:#007aff; color:#fff; border-radius:22px; font-size:14px; font-weight:600; cursor:pointer; }
 .chat-input-row button:active { opacity:0.8; }
+
+/* 오늘체크 */
+.today-section { padding: 16px 16px 28px; }
+.today-head { margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.today-title { font-size: 22px; font-weight: 800; color: #1d1d1f; }
+.today-date { font-size: 13px; color: #636366; font-weight: 600; white-space: nowrap; }
+.today-grid { display: grid; gap: 10px; }
+.today-top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.today-card { background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.today-card-title { font-size: 15px; font-weight: 800; margin-bottom: 10px; color: #1d1d1f; }
+.today-card-title-row { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; margin-bottom: 10px; }
+.today-card-title-row .today-card-title { margin-bottom: 0; }
+.today-title-hint { font-size: 11px; color: #8e8e93; font-weight: 450; line-height: 1.35; }
+.today-main-value { font-size: 25px; font-weight: 800; color: #1d1d1f; margin-bottom: 8px; }
+.today-card.compact { padding: 12px; min-width: 0; }
+.today-card.compact .today-card-title { font-size: 14px; margin-bottom: 8px; }
+.today-card.compact .today-main-value { font-size: 21px; margin-bottom: 7px; letter-spacing: 0; }
+.today-card.compact .today-metric-row { display: block; padding: 7px 0; font-size: 12px; }
+.today-card.compact .today-metric-row .k,
+.today-card.compact .today-metric-row .v { display: block; text-align: left; }
+.today-card.compact .today-metric-row .v { margin-top: 2px; font-size: 12px; }
+.today-metric-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid #f0f0f2; font-size: 13px; }
+.today-metric-row:first-of-type { border-top: 0; }
+.today-metric-row .k { color: #636366; font-weight: 600; }
+.today-metric-row .v { color: #1d1d1f; font-weight: 800; text-align: right; }
+.today-list { display: flex; flex-direction: column; gap: 8px; }
+.today-list-row { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; font-size: 13px; }
+.today-list-row .rank { color: #86868b; font-weight: 800; }
+.today-list-row .name { color: #1d1d1f; font-weight: 700; line-height: 1.3; }
+.today-list-row .value { color: #007aff; font-weight: 800; white-space: nowrap; }
+.today-empty { color: #86868b; font-size: 13px; line-height: 1.45; }
+.today-alerts { display: flex; flex-direction: column; gap: 8px; }
+.today-alert { padding: 9px 10px; border-radius: 10px; background: #fff4e5; color: #8a4b00; font-size: 13px; line-height: 1.4; font-weight: 650; }
+.today-ok { padding: 9px 10px; border-radius: 10px; background: #e8f7ee; color: #248a45; font-size: 13px; font-weight: 700; }
+.today-criteria { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f2; display: flex; flex-direction: column; gap: 5px; }
+.today-criteria-row { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; line-height: 1.35; color: #8e8e93; font-weight: 450; }
+.today-criteria-row .state { white-space: nowrap; font-weight: 650; color: #34c759; }
+.today-criteria-row.warn .state { color: #c06b00; }
+.update-needed { background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); color: #1d1d1f; font-size: 15px; font-weight: 750; line-height: 1.5; }
+.update-needed .sub { margin-top: 8px; color: #636366; font-size: 13px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -514,7 +557,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
 <!-- 상단 탭바 -->
 <div class="tab-bar">
-  <button class="tab-bar-btn active" id="tbSales" onclick="switchView('sales')">
+  <button class="tab-bar-btn active" id="tbToday" onclick="switchView('today')">
+    <span class="icon">☑️</span><span>오늘체크</span>
+  </button>
+  <button class="tab-bar-btn" id="tbSales" onclick="switchView('sales')">
     <span class="icon">📊</span><span>매출</span>
   </button>
   <button class="tab-bar-btn" id="tbReorder" onclick="switchView('reorder')">
@@ -528,8 +574,19 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   </button>
   </div>
 
+<!-- ── 오늘체크 뷰 ── -->
+<div class="view active" id="view-today">
+  <div class="today-section">
+    <div class="today-head">
+      <div class="today-title">오늘체크</div>
+      <div class="today-date" id="todayBasis">-</div>
+    </div>
+    <div id="todayContent"></div>
+  </div>
+</div>
+
 <!-- ── 매출 트래커 뷰 ── -->
-<div class="view active" id="view-sales">
+<div class="view" id="view-sales">
   <div class="sales-section">
     <!-- 전체 누적 -->
     <div class="total-card">
@@ -807,19 +864,20 @@ DAILY.forEach(d =>{ dailyMap[d.d] = d; }
 );
 
 // ══ 뷰 전환 ══
-let currentView = 'sales';
+let currentView = 'today';
 function switchView(v){
-  ['sales','reorder','excel','chat'].forEach(id => {
+  ['today','sales','reorder','excel','chat'].forEach(id => {
     const el = document.getElementById('view-' + id);
     if (el) el.classList.remove('active');
   });
   const active = document.getElementById('view-' + v);
   if (active) active.classList.add('active');
   document.querySelectorAll('.tab-bar-btn').forEach(el => el.classList.remove('active'));
-  const idMap = {sales:'Sales', reorder:'Reorder', excel:'Excel', chat:'Chat'};
+  const idMap = {today:'Today', sales:'Sales', reorder:'Reorder', excel:'Excel', chat:'Chat'};
   const btn = document.getElementById('tb' + idMap[v]);
   if (btn) btn.classList.add('active');
   currentView = v;
+  if (v === 'today') renderTodayCheck();
   if (v === 'chat') initChatTab();
 }
 // ══ 매출 트래커 ══
@@ -827,6 +885,151 @@ function fmt(n){
   return n.toLocaleString();
 }
 function fmtFull(n){ return n.toLocaleString() + '원'; }
+function todayEscape(s){
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function todayKoreanDate(dateStr){
+  if (!dateStr) return '-';
+  const parts = dateStr.split('-');
+  return `${parseInt(parts[1], 10)}월 ${parseInt(parts[2], 10)}일`;
+}
+function localDateStr(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function yesterdayDateStr(){
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - 1);
+  return localDateStr(d);
+}
+function latestSalesDate(){
+  return DAILY.length ? DAILY[DAILY.length - 1].d : '';
+}
+function productInfo(name){
+  return PRODUCTS[name] || {cat:'', price:0};
+}
+function isPokemonCardItem(name){
+  const p = productInfo(name);
+  const t = (String(name) + ' ' + String(p.cat || '')).replace(/\s+/g, '');
+  return t.includes('포켓몬카드');
+}
+function isBarcodeMissingItem(name){
+  const t = String(name || '').replace(/\s+/g, '');
+  return t.includes('바코드없을시') || t.includes('바코드없는') || t.includes('바코드없음');
+}
+function isIcecreamItem(name){
+  return productInfo(name).cat === '아이스크림';
+}
+function sumItems(rows, predicate){
+  return (rows || []).reduce((acc, r) => {
+    if (!predicate(r.n)) return acc;
+    acc.q += Number(r.q || 0);
+    acc.s += Number(r.s || 0);
+    return acc;
+  }, {q:0, s:0});
+}
+function splitPokemonSales(date){
+  const out = {single:{q:0,s:0}, box:{q:0,s:0}, other:{q:0,s:0}};
+  (DAILY_ITEMS[date] || []).forEach(r => {
+    if (!isPokemonCardItem(r.n)) return;
+    const price = productInfo(r.n).price || (r.q ? Math.round(r.s / r.q) : 0);
+    const bucket = price >= 20000 ? out.box : price >= 1000 ? out.single : out.other;
+    bucket.q += Number(r.q || 0);
+    bucket.s += Number(r.s || 0);
+  });
+  return out;
+}
+function topDailyProducts(date){
+  return (DAILY_ITEMS[date] || [])
+    .filter(r => !isPokemonCardItem(r.n))
+    .slice()
+    .sort((a,b) => Number(b.s || 0) - Number(a.s || 0))
+    .slice(0,5);
+}
+function reorderTodayItems(){
+  return ITEMS
+    .filter(item => item.tier === 'urgent' && getItemState(item.id).status === 0)
+    .slice(0,5);
+}
+function icecreamSalesForDate(date){
+  return sumItems(DAILY_ITEMS[date] || [], isIcecreamItem).s;
+}
+function averageIcecreamBefore(date){
+  const ym = date.slice(0,7);
+  const rows = DAILY.filter(d => d.d.startsWith(ym) && d.d < date);
+  if (!rows.length) return 0;
+  return Math.round(rows.reduce((a, d) => a + icecreamSalesForDate(d.d), 0) / rows.length);
+}
+function anomalySignals(date, record){
+  const alerts = [];
+  const barcodeTotal = sumItems(DAILY_ITEMS[date] || [], isBarcodeMissingItem).s;
+  if (barcodeTotal > 10000) alerts.push(`바코드 없는 상품 매출이 ${fmtFull(barcodeTotal)}입니다.`);
+  if (record.s1 <= 200000) alerts.push(`1호점 매출이 ${fmtFull(record.s1)}입니다.`);
+  if (record.s2 <= 200000) alerts.push(`2호점 매출이 ${fmtFull(record.s2)}입니다.`);
+  const ice = icecreamSalesForDate(date);
+  const avg = averageIcecreamBefore(date);
+  if (avg > 0 && ice <= avg * 0.8) alerts.push(`아이스크림 매출이 월 평균 ${fmtFull(avg)}보다 낮은 ${fmtFull(ice)}입니다.`);
+  return alerts;
+}
+function anomalyCriteria(date, record){
+  const barcodeTotal = sumItems(DAILY_ITEMS[date] || [], isBarcodeMissingItem).s;
+  const ice = icecreamSalesForDate(date);
+  const avg = averageIcecreamBefore(date);
+  const storeOk = record.s1 > 200000 && record.s2 > 200000;
+  const iceOk = avg <= 0 || ice > avg * 0.8;
+  return [
+    { label:`바코드 없는 상품 일 ${fmtFull(10000)} 이하`, ok: barcodeTotal <= 10000 },
+    { label:`지점별 매출 ${fmtFull(200000)} 초과`, ok: storeOk },
+    { label:'아이스크림 매출 월평균 대비 20% 이상 하락 없음', ok: iceOk }
+  ];
+}
+function renderTodayCheck(){
+  const box = document.getElementById('todayContent');
+  const basis = document.getElementById('todayBasis');
+  if (!box || !basis) return;
+  const expected = yesterdayDateStr();
+  const latest = latestSalesDate();
+  basis.textContent = latest ? `${todayKoreanDate(latest)} 기준` : '데이터 없음';
+  if (latest !== expected) {
+    box.innerHTML = `<div class="update-needed">매출 업데이트가 필요합니다.<div class="sub">마지막으로 업데이트된 날짜는 ${todayKoreanDate(latest)}입니다.</div></div>`;
+    return;
+  }
+  const row = dailyMap[latest] || {s1:0, s2:0};
+  const pokemon = splitPokemonSales(latest);
+  const topRows = topDailyProducts(latest);
+  const orders = reorderTodayItems();
+  const alerts = anomalySignals(latest, row);
+  const criteria = anomalyCriteria(latest, row);
+  const topHtml = topRows.length ? topRows.map((r, i) =>
+    `<div class="today-list-row"><div class="rank">${i+1}</div><div class="name">${todayEscape(r.n)}</div><div class="value">${fmtFull(r.s)}</div></div>`
+  ).join('') : '<div class="today-empty">눈에 띄는 상품이 없습니다.</div>';
+  const orderHtml = orders.length ? orders.map((item, i) =>
+    `<div class="today-list-row"><div class="rank">${i+1}</div><div class="name">${todayEscape(item.name)}</div><div class="value">${fmtFull(item.price)}</div></div>`
+  ).join('') : '<div class="today-empty">미확인 1순위 발주가 없습니다.</div>';
+  const alertHtml = alerts.length ? alerts.map(a => `<div class="today-alert">${todayEscape(a)}</div>`).join('') : '<div class="today-ok">확인할 이상 신호가 없습니다.</div>';
+  const criteriaHtml = criteria.map(c =>
+    `<div class="today-criteria-row ${c.ok ? '' : 'warn'}"><span>${todayEscape(c.label)}</span><span class="state">${c.ok ? '정상!' : '확인 필요'}</span></div>`
+  ).join('');
+  box.innerHTML = `<div class="today-grid">
+    <div class="today-top-grid">
+      <div class="today-card compact">
+        <div class="today-card-title">어제 매출</div>
+        <div class="today-main-value">${fmtFull(row.s1 + row.s2)}</div>
+        <div class="today-metric-row"><span class="k">1호점</span><span class="v">${fmtFull(row.s1)}</span></div>
+        <div class="today-metric-row"><span class="k">2호점</span><span class="v">${fmtFull(row.s2)}</span></div>
+      </div>
+      <div class="today-card compact">
+        <div class="today-card-title">포켓몬카드</div>
+        <div class="today-main-value">${fmtFull(pokemon.single.s + pokemon.box.s)}</div>
+        <div class="today-metric-row"><span class="k">낱개</span><span class="v">${pokemon.single.q}개 · ${fmtFull(pokemon.single.s)}</span></div>
+        <div class="today-metric-row"><span class="k">박스</span><span class="v">${pokemon.box.q}개 · ${fmtFull(pokemon.box.s)}</span></div>
+      </div>
+    </div>
+    <div class="today-card"><div class="today-card-title-row"><div class="today-card-title">눈에 띄는 상품</div><div class="today-title-hint">포켓몬카드 제외 · 기준일 매출 베스트 5</div></div><div class="today-list">${topHtml}</div></div>
+    <div class="today-card"><div class="today-card-title-row"><div class="today-card-title">오늘 확인할 발주</div><div class="today-title-hint">발주 1순위 · 미확인만</div></div><div class="today-list">${orderHtml}</div></div>
+    <div class="today-card"><div class="today-card-title">이상 신호</div><div class="today-alerts">${alertHtml}</div><div class="today-criteria">${criteriaHtml}</div></div>
+  </div>`;
+}
 let calYear, calMonth, calStore = 'both';
 
 function initSales(){
@@ -1063,34 +1266,42 @@ list.innerHTML = filtered.map((item, idx) =>{
     const rankLabel = `추천 ${globalIdx + 1}위`;
     const statusClass = STATUS_CLASSES[st.status] || 's0';
     const statusLabel = STATUS_LABELS[st.status] || STATUS_LABELS[0];
-    return `<div class="item-card status-${st.status}" onclick="openModalByIdx(${globalIdx})">
+    return `<div class="item-card status-${st.status}" onclick="toggleItemDetails(event, ${globalIdx})">
       <div class="card-top">
-        <div class="item-name">${item.name}</div>
-        <button class="status-btn ${statusClass}" onclick="event.stopPropagation();quickCycleByIdx(${globalIdx})">${statusLabel}</button>
+        <div>
+          <div class="item-name">${item.name}</div>
+          <div class="card-subline">${rankLabel} · ${item.price.toLocaleString()}원</div>
+        </div>
+        <button class="status-btn ${statusClass}" onclick="event.stopPropagation();openModalByIdx(${globalIdx})">${statusLabel}</button>
       </div>
-      <div class="priority-line">
-        <span class="tag rank">${rankLabel}</span>
-        <span class="tag ${tierClass}">${tierLabel}</span>
-        <span class="tag">${item.cat}</span>
-        <span class="tag price">${item.price.toLocaleString()}원</span>
+      <div class="item-extra">
+        <div class="priority-line">
+          <span class="tag ${tierClass}">${tierLabel}</span>
+          <span class="tag">${item.cat}</span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-cell"><div class="k">최근 판매</div><div class="v">${dl}</div></div>
+          <div class="detail-cell"><div class="k">최근 판매량</div><div class="v">3일 ${item.q3||0} · 7일 ${item.q7||0} · 14일 ${item.q14||0}개</div></div>
+          <div class="detail-cell"><div class="k">지점 흐름</div><div class="v">1호점 ${item.s1q14||0} / 2호점 ${item.s2q14||0}</div></div>
+          <div class="detail-cell"><div class="k">14일 매출</div><div class="v">${(item.s14||0).toLocaleString()}원</div></div>
+        </div>
+        <div class="order-info visible">우선 확인 이유: ${item.reason || '최근 판매 흐름 확인'} · 추천점수 ${item.score || 0}</div>
+        ${st.note?`<div class="order-info visible">📝 ${st.note}</div>`:''}
       </div>
-      <div class="item-detail">
-        <div class="detail-cell"><div class="k">최근 판매</div><div class="v">${dl}</div></div>
-        <div class="detail-cell"><div class="k">최근 판매량</div><div class="v">3일 ${item.q3||0} · 7일 ${item.q7||0} · 14일 ${item.q14||0}개</div></div>
-        <div class="detail-cell"><div class="k">지점 흐름</div><div class="v">1호점 ${item.s1q14||0} / 2호점 ${item.s2q14||0}</div></div>
-        <div class="detail-cell"><div class="k">14일 매출</div><div class="v">${(item.s14||0).toLocaleString()}원</div></div>
-      </div>
-      <div class="order-info visible">우선 확인 이유: ${item.reason || '최근 판매 흐름 확인'} · 추천점수 ${item.score || 0}</div>
-      ${st.note?`<div class="order-info visible">📝 ${st.note}</div>`:''}</div>`;
+    </div>`;
   }
 ).join('');
+}
+function toggleItemDetails(e, idx){
+  const card = e.currentTarget;
+  if (card) card.classList.toggle('open');
 }
 function quickCycle(id){
   const st = getItemState(id);
   const quickOrder = [0, 1, 2, 0];
   const current = quickOrder.includes(st.status) ? st.status : 0;
   roState[id] = {...st, status:quickOrder[quickOrder.indexOf(current)+1], updatedAt:new Date().toISOString()};
-  saveState(); renderList();
+  saveState(); renderList(); renderTodayCheck();
 }
 function quickCycleByIdx(idx){ quickCycle(ITEMS[idx].id); }
 function openModalByIdx(idx){ openModal(ITEMS[idx].id); }
@@ -1111,7 +1322,7 @@ function saveModal(){
   if (!activeItemId) return;
   const note = document.getElementById('noteField').value.trim();
   roState[activeItemId] = {...getItemState(activeItemId), note, updatedAt:new Date().toISOString()};
-  saveState(); closeModal(); renderList();
+  saveState(); closeModal(); renderList(); renderTodayCheck();
 }
 function closeModal(e){
   if (e && e.target!==document.getElementById('modalBg')) return;
@@ -1861,15 +2072,20 @@ function doPriceTags() {
 }
 
 function initApp() {
-  ['sales','reorder','excel'].forEach(id => {
+  ['today','sales','reorder','excel','chat'].forEach(id => {
     const el = document.getElementById('view-' + id);
     if (el) el.classList.remove('active');
   });
-  const salesEl = document.getElementById('view-sales');
-  if (salesEl) salesEl.classList.add('active');
+  const todayEl = document.getElementById('view-today');
+  if (todayEl) todayEl.classList.add('active');
+  document.querySelectorAll('.tab-bar-btn').forEach(el => el.classList.remove('active'));
+  const todayBtn = document.getElementById('tbToday');
+  if (todayBtn) todayBtn.classList.add('active');
+  currentView = 'today';
   loadState();
   initSales();
   renderList();
+  renderTodayCheck();
 }
 
 
