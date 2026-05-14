@@ -462,6 +462,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 .chat-suggest-card:active { transform:scale(0.98); }
 [data-theme='dark'] .chat-suggest-card { background:#1a2622; border-color:#1e4a3a; color:#dde; }
 [data-theme='dark'] .chat-suggest-card:hover { background:#243430; }
+.chat-choice-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+.chat-choice-btn { border:1px solid #d7dbe0; background:#fff; color:#1d1d1f; border-radius:16px; padding:6px 10px; font-size:12px; font-weight:600; cursor:pointer; }
+.chat-choice-btn:active { transform:scale(0.98); }
+[data-theme='dark'] .chat-choice-btn { background:#15211e; border-color:#2a3833; color:#dde; }
 .chat-input-row { display:flex; gap:8px; padding:10px 12px; border-top:1px solid #e5e5e8; background:#fff; position:sticky; bottom:0; }
 [data-theme='dark'] .chat-input-row { background:#0d1816; border-color:#1e4a3a; }
 .chat-input-row input { flex:1; padding:11px 14px; border:1px solid #ccc; border-radius:22px; font-size:14px; outline:none; background:#fff; }
@@ -1855,6 +1859,12 @@ function initChatTab(){
       if (sg) sg.style.display = 'none';
     });
   });
+  const msgs = document.getElementById('chatMsgs');
+  msgs.addEventListener('click', e => {
+    const btn = e.target.closest('.chat-choice-btn');
+    if (!btn) return;
+    sendChat(btn.getAttribute('data-q'));
+  });
   const inp = document.getElementById('chatInput');
   const btn = document.getElementById('chatSend');
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
@@ -1890,7 +1900,20 @@ function sendChat(forceText){
 }
 
 const KRWfmt = n => Number(n).toLocaleString();
+function escapeHtml(s){
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function chatButton(label, q){
+  return '<button class="chat-choice-btn" data-q="' + escapeHtml(q) + '">' + escapeHtml(label) + '</button>';
+}
+function clarifyHtml(text, choices){
+  let html = escapeHtml(text) + '<div class="chat-choice-row">';
+  for (const c of choices) html += chatButton(c.label, c.q);
+  html += '</div>';
+  return { html: html };
+}
 function todayStr(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function latestDataDate(){ return DAILY.length ? DAILY[DAILY.length - 1].d : todayStr(); }
 function addDays(s, n){ const d = new Date(s); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function inRange(d, start, end){ return d >= start && d <= end; }
 
@@ -1902,14 +1925,15 @@ function knownCategories(){
 
 function extractPeriod(q){
   const today = todayStr();
+  const dataEnd = latestDataDate();
   let m;
   if (m = q.match(/최근\s*(\d+)\s*(일|주)/)) {
     const n = parseInt(m[1]) * (m[2]==='주' ? 7 : 1);
-    return { start: addDays(today, -n+1), end: today, label: '최근 ' + m[1] + m[2] };
+    return { start: addDays(dataEnd, -n+1), end: dataEnd, label: '최근 ' + m[1] + m[2] };
   }
   if (/이번\s*달/.test(q)) {
-    const t = today.slice(0,7);
-    return { start: t+'-01', end: today, label: '이번 달' };
+    const t = dataEnd.slice(0,7);
+    return { start: t+'-01', end: dataEnd, label: '이번 달' };
   }
   if (/지난\s*달/.test(q)) {
     const d = new Date(today); d.setDate(0);
@@ -1925,8 +1949,8 @@ function extractPeriod(q){
     const lastDay = new Date(parseInt(yyyy), parseInt(mm), 0).getDate();
     return { start: yyyy+'-'+mm+'-01', end: yyyy+'-'+mm+'-'+String(lastDay).padStart(2,'0'), label: parseInt(mm)+'월' };
   }
-  const t = today.slice(0,7);
-  return { start: t+'-01', end: today, label: '이번 달', isDefault: true };
+  const t = dataEnd.slice(0,7);
+  return { start: t+'-01', end: dataEnd, label: '이번 달', isDefault: true };
 }
 
 function extractStore(q){
@@ -2006,6 +2030,51 @@ function aggregateSubject(agg, sub){
 
 function isPokemonSubject(sub){
   return sub && normalizeSubjectText(sub.value) === '포켓몬카드';
+}
+
+function detectMetric(q){
+  const wantsQty = /몇\s*개|수량|판매량|몇\s*개\s*팔|얼마나\s*팔|개수/.test(q);
+  const wantsRevenue = /매출|금액|판매\s*금액|판매금액|얼마|원\b/.test(q);
+  if (wantsQty && !wantsRevenue) return 'qty';
+  if (wantsRevenue && !wantsQty) return 'revenue';
+  if (wantsQty && wantsRevenue) return 'both';
+  return null;
+}
+
+function metricLabel(metric){
+  if (metric === 'qty') return '판매수량';
+  if (metric === 'revenue') return '판매금액';
+  return '판매수량/금액';
+}
+
+function stripQuestionWords(q){
+  return q
+    .replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|\d+\s*월/gi, ' ')
+    .replace(/판매\s*금액|판매금액|판매\s*수량|판매수량|매출|금액|수량|판매량|몇\s*개|얼마|얼마나|팔렸어|팔림|팔렸|팔린|판매|개수/gi, ' ')
+    .replace(/1호점|2호점|일호점|이호점|철산|푸르지오|양\s*매장|전체|합계|두\s*매장|전\s*매장/gi, ' ')
+    .replace(/[?？!！]/g, ' ')
+    .trim();
+}
+
+function splitSubjectTokens(text){
+  return text
+    .split(/\s*(?:,|，|ㆍ|·|\/|\+|그리고|및|하고)\s*/g)
+    .map(t => t.trim().replace(/^(은|는|이|가)\s*/, '').replace(/\s*(은|는|이|가|의)$/,''))
+    .filter(Boolean);
+}
+
+function looseSubject(token){
+  return resolveSubject(token) || { type: 'keyword', value: token, products: [] };
+}
+
+function subjectTotal(agg, sub){
+  const summary = aggregateSubject(agg, sub);
+  return { q: summary.totalQ, s: summary.totalS };
+}
+
+function periodBasis(period, store){
+  const sLabel = store === 's1' ? '1호점' : (store === 's2' ? '2호점' : '전체 지점');
+  return '기준: ' + period.start + ' ~ ' + period.end + ' / ' + sLabel;
 }
 
 function pokemonQtyAnswer(period, store, sLabel, agg, sub){
@@ -2184,17 +2253,94 @@ function handleStoreCompare(q){
   return { html: html };
 }
 
+function handleMultiAggregate(q){
+  const metric = detectMetric(q);
+  if (!metric) return null;
+  const subjectText = stripQuestionWords(q);
+  const tokens = splitSubjectTokens(subjectText);
+  if (tokens.length < 2) return null;
+  const period = extractPeriod(q);
+  const { store } = resolveStore(q, false);
+  const agg = aggregate(period, store || 'all');
+  const rows = tokens.map(token => {
+    const sub = looseSubject(token);
+    const total = subjectTotal(agg, sub);
+    return { token, q: total.q, s: total.s };
+  });
+  let html = '<b>' + period.label + ' 여러 키워드 ' + metricLabel(metric) + '</b><br>';
+  html += '<span style="font-size:12px;color:#888;">' + escapeHtml(periodBasis(period, store || 'all')) + '</span><br><table>';
+  for (const row of rows) {
+    const value = metric === 'qty'
+      ? row.q + '개'
+      : metric === 'revenue'
+        ? KRWfmt(row.s) + '원'
+        : row.q + '개<br>' + KRWfmt(row.s) + '원';
+    html += '<tr><td>' + escapeHtml(row.token) + '</td><td>' + value + '</td></tr>';
+  }
+  html += '</table>';
+  const missing = rows.filter(r => r.q === 0 && r.s === 0).map(r => r.token);
+  if (missing.length) html += '<br><span style="font-size:12px;color:#888;">판매 기록이 없는 키워드: ' + escapeHtml(missing.join(', ')) + '</span>';
+  return { html: html };
+}
+
+function handleClarifyingQuestion(q){
+  const metric = detectMetric(q);
+  const subjectText = stripQuestionWords(q);
+  const tokens = splitSubjectTokens(subjectText);
+  const firstSubject = tokens.length === 1 ? looseSubject(tokens[0]) : null;
+  if (tokens.length >= 2 && !metric) {
+    return clarifyHtml('여러 키워드를 어떤 기준으로 볼까요?', [
+      { label: '판매수량', q: q + ' 판매 수량' },
+      { label: '판매금액', q: q + ' 판매 금액' },
+      { label: '수량+금액', q: q + ' 판매 수량과 금액' },
+    ]);
+  }
+  if (firstSubject && !metric && !/베스트|순위|랭킹|마지막|안\s*팔린|못\s*팔린|회전/.test(q)) {
+    return clarifyHtml(firstSubject.value + '을 어떤 기준으로 볼까요?', [
+      { label: '이번 달 매출', q: '이번 달 ' + firstSubject.value + ' 매출' },
+      { label: '이번 달 판매수량', q: '이번 달 ' + firstSubject.value + ' 판매 수량' },
+      { label: '지점별 비교', q: '이번 달 ' + firstSubject.value + ' 1호점 vs 2호점' },
+      { label: '베스트 상품', q: '이번 달 ' + firstSubject.value + ' 베스트 10' },
+    ]);
+  }
+  if (!firstSubject && metric && !/전체|합계|매장|호점|철산|푸르지오/.test(q)) {
+    return clarifyHtml('어떤 상품이나 카테고리를 볼까요?', [
+      { label: '전체 매출', q: q + ' 전체' },
+      { label: '포켓몬카드', q: q + ' 포켓몬카드' },
+      { label: '아이돌', q: q + ' 아이돌' },
+      { label: '완구', q: q + ' 완구' },
+    ]);
+  }
+  if (/요즘|최근|잘\s*팔|뭐가/.test(q) && !/베스트|순위|랭킹/.test(q)) {
+    return clarifyHtml('어떤 기준의 베스트를 볼까요?', [
+      { label: '이번 달 베스트', q: '이번 달 베스트 10' },
+      { label: '최근 7일 베스트', q: '최근 7일 베스트 10' },
+      { label: '어제 베스트', q: '어제 베스트 10' },
+      { label: '매출 베스트', q: '이번 달 매출 베스트 10' },
+    ]);
+  }
+  return null;
+}
+
 function handleAggregate(q){
-  if (!/(매출|얼마|몇\s*개|판매량|수량)/.test(q)) return null;
+  if (!/(매출|금액|얼마|몇\s*개|판매량|수량|개수)/.test(q)) return null;
   if (/베스트|순위|랭킹|top/i.test(q)) return null;
   if (/마지막\s*판매/.test(q)) return null;
   if (/(vs|대비|비교|매장별)/i.test(q)) return null;
   const period = extractPeriod(q);
-  const cleaned = q.replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|매출|수량|얼마|몇\s*개|개|판매량|판매|매장|호점|철산|푸르지오|양|전체|합계|\d+\s*월/gi, '').trim();
+  const cleaned = q.replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|매출|금액|판매\s*금액|판매금액|수량|얼마|몇\s*개|개|판매량|판매|매장|호점|철산|푸르지오|양|전체|합계|\d+\s*월/gi, '').trim();
   const sub = resolveSubject(cleaned);
   if (!sub) {
     const r = resolveStore(q, false);
     if (r.autoMsg) return { text: r.autoMsg };
+    if (/몇\s*개|수량|판매량|개수/.test(q) && !/전체|합계|매출|금액|얼마/.test(q)) {
+      return clarifyHtml('어떤 상품이나 카테고리의 판매수량을 볼까요?', [
+        { label: '포켓몬카드', q: q + ' 포켓몬카드' },
+        { label: '아이돌', q: q + ' 아이돌' },
+        { label: '완구', q: q + ' 완구' },
+        { label: '전체 베스트', q: q + ' 베스트 10' },
+      ]);
+    }
     const t = dailyTotal(period, r.store);
     const sLabel = r.store === 's1' ? '1호점' : (r.store === 's2' ? '2호점' : '양 매장');
     return { text: period.label + ' ' + sLabel + ' 매출 ' + KRWfmt(t) + '원이에용.' };
@@ -2205,8 +2351,8 @@ function handleAggregate(q){
   let totalQ = summary.totalQ, totalS = summary.totalS;
   const sLabel = store === 's1' ? ' 1호점' : (store === 's2' ? ' 2호점' : '');
   if (totalQ === 0) return { text: period.label + sLabel + ' ' + sub.value + ' 판매 내역이 없어용.' };
-  const askQty = /몇\s*개|수량|판매량/.test(q) && !/매출|얼마/.test(q);
-  const askRev = /매출|얼마/.test(q) && !/몇\s*개|수량|판매량/.test(q);
+  const askQty = /몇\s*개|수량|판매량|개수/.test(q) && !/매출|금액|얼마/.test(q);
+  const askRev = /매출|금액|얼마/.test(q) && !/몇\s*개|수량|판매량|개수/.test(q);
   if (askQty && isPokemonSubject(sub)) return pokemonQtyAnswer(period, store, sLabel, agg, sub);
   if (askQty) return { text: period.label + sLabel + ' ' + sub.value + ' ' + totalQ + '개 팔렸어용.' };
   if (askRev) return { text: period.label + sLabel + ' ' + sub.value + ' 매출 ' + KRWfmt(totalS) + '원이에용.' };
@@ -2220,8 +2366,15 @@ function handleChatQuery(q){
   if (r = handlePriceBand(q)) return r;
   if (r = handleStoreCompare(q)) return r;
   if (r = handleRanking(q)) return r;
+  if (r = handleMultiAggregate(q)) return r;
   if (r = handleAggregate(q)) return r;
-  return { text: '잘 모르겠어용 😅 이렇게 물어보시면 잘 답해드려용:\n• 이번 달 [상품/카테고리] 매출/수량\n• [기간] [카테고리] 베스트 N\n• [상품] 마지막 판매일\n• [가격]원 이하/이상 베스트 N\n• 이번 달 1호점 vs 2호점\n• 최근 N주 안 팔린 고가 상품' };
+  if (r = handleClarifyingQuestion(q)) return r;
+  return clarifyHtml('질문을 이렇게 이해해볼 수 있어요. 어떤 걸 원하시나요?', [
+    { label: '이번 달 매출', q: q + ' 이번 달 매출' },
+    { label: '이번 달 판매수량', q: q + ' 이번 달 판매 수량' },
+    { label: '베스트 10', q: q + ' 이번 달 베스트 10' },
+    { label: '지점별 비교', q: q + ' 1호점 vs 2호점' },
+  ]);
 }
 </script>
 </body>
