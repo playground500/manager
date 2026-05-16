@@ -1037,8 +1037,7 @@ function initSales(){
   calYear = today.getFullYear(); calMonth = today.getMonth();
 
   // 어제
-  const yest = new Date(today); yest.setDate(today.getDate()-1);
-  const yestStr = yest.toISOString().slice(0,10);
+  const yestStr = yesterdayDateStr();
   const yestData = dailyMap[yestStr] || {s1:0, s2:0};
 
   // 이번 달
