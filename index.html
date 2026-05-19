@@ -2093,6 +2093,7 @@ function initApp() {
 // ══════════════════════════════════════════════════════
 
 let chatInited = false;
+let pendingChatQuery = null;
 function initChatTab(){
   if (chatInited) return;
   chatInited = true;
@@ -2128,12 +2129,17 @@ function addChatMsg(role, text, html){
 
 function sendChat(forceText){
   const inp = document.getElementById('chatInput');
-  const q = (forceText || inp.value).trim();
+  let q = (forceText || inp.value).trim();
   if (!q) return;
   inp.value = '';
   addChatMsg('user', q);
   setTimeout(() => {
     try {
+      const periodChoice = pendingChatQuery ? periodOnlyChoice(q) : null;
+      if (periodChoice) {
+        q = periodChoice + ' ' + pendingChatQuery.q;
+        pendingChatQuery = null;
+      }
       const r = handleChatQuery(q);
       if (r.html) addChatMsg('bot', null, r.html);
       else addChatMsg('bot', r.text);
@@ -2161,6 +2167,22 @@ function latestDataDate(){ return DAILY.length ? DAILY[DAILY.length - 1].d : tod
 function addDays(s, n){ const d = new Date(s); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function inRange(d, start, end){ return d >= start && d <= end; }
 
+function hasExplicitPeriod(q){
+  return /이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|\d+\s*월|전체/.test(q);
+}
+
+function periodOnlyChoice(q){
+  const trimmed = normalizeSubjectText(q);
+  if (/^이번달$/.test(trimmed)) return '이번 달';
+  if (/^지난달$/.test(trimmed)) return '지난 달';
+  if (/^어제$/.test(trimmed)) return '어제';
+  if (/^오늘$/.test(trimmed)) return '오늘';
+  if (/^전체$/.test(trimmed)) return '전체';
+  const month = trimmed.match(/^(\d{1,2})월$/);
+  if (month) return parseInt(month[1]) + '월';
+  return null;
+}
+
 function knownCategories(){
   const set = new Set();
   for (const k in PRODUCTS) if (PRODUCTS[k].cat) set.add(PRODUCTS[k].cat);
@@ -2171,6 +2193,10 @@ function extractPeriod(q){
   const today = todayStr();
   const dataEnd = latestDataDate();
   let m;
+  if (/전체/.test(q)) {
+    const start = DAILY.length ? DAILY[0].d : dataEnd;
+    return { start: start, end: dataEnd, label: '전체 기간' };
+  }
   if (m = q.match(/최근\s*(\d+)\s*(일|주)/)) {
     const n = parseInt(m[1]) * (m[2]==='주' ? 7 : 1);
     return { start: addDays(dataEnd, -n+1), end: dataEnd, label: '최근 ' + m[1] + m[2] };
@@ -2451,10 +2477,17 @@ function handleRanking(q){
   if (/원\s*(?:이하|이상|대|짜리)|\d+\s*[-~]\s*\d+/.test(q)) return null;
   let topN = 10, m;
   if (m = q.match(/베스트\s*(\d+)|top\s*(\d+)|순위\s*(\d+)/i)) topN = parseInt(m[1] || m[2] || m[3]);
+  if (!hasExplicitPeriod(q)) {
+    pendingChatQuery = { type: 'ranking_period', q: q };
+    return clarifyHtml('어느 기간 기준으로 볼까요?', [
+      { label: '이번 달', q: '이번 달 ' + q },
+      { label: '전체', q: '전체 ' + q },
+    ]);
+  }
   const period = extractPeriod(q);
   const { store } = resolveStore(q, false);
   const byRevenue = /매출.*베스트|베스트.*매출/.test(q);
-  const cleaned = q.replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|매출|수량|베스트|순위|랭킹|top|\d+|매장|호점|철산|푸르지오|양|전체|합계|vs/gi, '').trim();
+  const cleaned = q.replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|매출|수량|판매|베스트|순위|랭킹|top|\d+|매장|호점|철산|푸르지오|양|전체|합계|vs/gi, '').trim();
   const sub = resolveSubject(cleaned);
   const agg = aggregate(period, store || 'all');
   let list = Object.entries(agg).map(([n, v]) => ({ n: n, q: v.q, s: v.s, cat: (PRODUCTS[n] && PRODUCTS[n].cat) || '' }));
