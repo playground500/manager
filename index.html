@@ -69,16 +69,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
                 padding: 4px 0; }
 .cal-weekday:first-child { color: #ff3b30; }
 .cal-weekday:last-child { color: #007aff; }
-.cal-grid { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); padding: 0 6px 12px; gap: 2px; width: 100%; box-sizing: border-box; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); grid-auto-rows: 48px; padding: 0 6px 12px; gap: 2px; width: 100%; box-sizing: border-box; align-items: stretch; }
 .cal-cell { display: flex; flex-direction: column; align-items: center;
               justify-content: center; border-radius: 8px; padding: 4px 1px;
-              min-height: 46px; min-width: 0; overflow: hidden; cursor: default; }
+              min-height: 0; height: 48px; min-width: 0; overflow: hidden; cursor: default; }
 .cal-cell.empty { background: transparent; }
 .cal-cell.today { background: #fff3e0 !important; }
 .cal-day { font-size: 11px; font-weight: 600; color: #1d1d1f; line-height: 1; }
 .cal-cell.sun .cal-day { color: #ff3b30; }
 .cal-cell.sat .cal-day { color: #007aff; }
-.cal-sales { font-size: 8px; color: #636366; line-height: 1.2; margin-top: 2px; text-align: center; font-weight: 500; word-break: break-all; }
+.cal-sales { font-size: 8px; color: #636366; line-height: 1.2; margin-top: 2px; text-align: center; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .cal-cell.has-sales { background: #f0f9ff; }
 .cal-cell.has-sales.high { background: #dbeafe; }
 .cal-cell.has-sales.very-high { background: #bfdbfe; }
@@ -91,9 +91,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .ro-header { background: #fff; padding: 12px 16px 0; position: sticky; top: 56px; z-index: 90;
               box-shadow: 0 1px 0 rgba(0,0,0,.06); }
 .priority-title { padding: 0 0 10px; }
-.priority-title .eyebrow { font-size: 11px; color: #86868b; font-weight: 700; }
-.priority-title .main { margin-top: 2px; font-size: 19px; font-weight: 800; color: #1d1d1f; }
-.priority-title .sub { margin-top: 4px; font-size: 12px; color: #6e6e73; line-height: 1.4; }
+.priority-title .eyebrow,
+.priority-title .main { display: none; }
+.priority-title .sub { margin-top: 0; font-size: 13px; color: #8a654f; line-height: 1.45; font-weight: 750; }
 .search-box { width: 100%; padding: 9px 14px; border-radius: 10px; border: none;
                background: #f2f2f7; font-size: 15px; color: #1d1d1f; outline: none; margin-bottom: 10px; }
 .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
@@ -493,12 +493,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 .chat-input-row button:active { opacity:0.8; }
 
 /* 오늘체크 */
-.today-section { padding: 16px 16px 28px; background:
-  linear-gradient(180deg, #fff4c7 0, #fffaf0 170px, #fffaf0 100%); min-height: calc(100vh - 100px); }
-.today-head { margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
-.today-title { font-size: 22px; font-weight: 850; color: #4b3528; }
-.today-title:before { content: "✏️"; margin-right: 6px; }
-.today-date { font-size: 13px; color: #9a7863; font-weight: 700; white-space: nowrap; }
+.today-section { padding: 14px 16px 28px; background: #fffaf0; min-height: calc(100vh - 100px); }
+.today-head { margin-bottom: 10px; display: flex; justify-content: flex-start; align-items: center; }
+.today-title { display: none; }
+.today-date { font-size: 13px; color: #8a654f; font-weight: 750; white-space: normal; text-align: left; }
 .today-grid { display: grid; gap: 10px; }
 .today-top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .today-card { background: #fffdf9; border: 1px solid #f3dfc7; border-radius: 12px; padding: 14px;
@@ -647,8 +645,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   <div class="ro-header">
     <div class="priority-title">
       <div class="eyebrow">최근 판매 흐름 기준</div>
-      <div class="main">발주 우선순위 추천기</div>
-      <div class="sub">만원 이상 상품 중 포켓몬카드류를 제외하고, 먼저 확인할 상품부터 보여줍니다.</div>
+      <div class="main"></div>
+      <div class="sub">💬 만원 이상 상품 중 재고 확인이 필요하거나 발주가 필요한 상품입니다</div>
     </div>
     <input class="search-box" type="text" id="searchInput" placeholder="상품명 검색..." oninput="renderList()">
     <div class="tabs">
@@ -718,8 +716,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       </div>
     </details>
   </div>
-
-  <div style="padding:16px;text-align:center;"><div id="cheerMsg" style="font-size:13px;color:#a8c5c0;font-weight:500;letter-spacing:0.5px;">💪 오늘도 대박나세요!</div></div>
 </div><!-- /view-excel -->
 <!-- ── 채팅 뷰 ── -->
 <div class="view" id="view-chat">
@@ -986,13 +982,21 @@ function anomalyCriteria(date, record){
     { label:'아이스크림 매출 월평균 대비 20% 이상 하락 없음', ok: iceOk }
   ];
 }
+const TODAY_CHEERS = [
+  '💬 오늘도 힘나는 하루!',
+  '💬 오늘 할 일, 가볍게 체크해요',
+  '💬 작은 확인이 큰 품절을 막아요',
+  '💬 오늘도 매장 흐름을 살펴볼게요',
+  '💬 필요한 것만 차근차근 챙겨요',
+];
+const TODAY_CHEER = TODAY_CHEERS[Math.floor(Math.random() * TODAY_CHEERS.length)];
 function renderTodayCheck(){
   const box = document.getElementById('todayContent');
   const basis = document.getElementById('todayBasis');
   if (!box || !basis) return;
   const expected = yesterdayDateStr();
   const latest = latestSalesDate();
-  basis.textContent = latest ? `${todayKoreanDate(latest)} 기준` : '데이터 없음';
+  basis.textContent = TODAY_CHEER;
   if (latest !== expected) {
     box.innerHTML = `<div class="update-needed">매출 업데이트가 필요합니다.<div class="sub">마지막으로 업데이트된 날짜는 ${todayKoreanDate(latest)}입니다.</div></div>`;
     return;
@@ -1689,22 +1693,6 @@ function toggleDark() {
     });
   }
 })();
-
-// ── 랜덤 응원 문구 ──
-const cheers = [
-  '🌿 오늘도 힘내세요!',
-  '💪 오늘도 대박나세요!',
-  '🏪 플레이그라운드 파이팅!',
-  '✨ 오늘도 좋은 하루 되세요!',
-  '🎯 오늘도 완벽한 하루!',
-  '🌟 최고의 하루가 될 거예요!',
-  '🍀 행운이 가득한 하루!',
-  '💚 오늘도 잘 하고 계세요!',
-];
-document.addEventListener('DOMContentLoaded', () => {
-  const el = document.getElementById('cheerMsg');
-  if (el) el.textContent = cheers[Math.floor(Math.random() * cheers.length)];
-});
 
 // ── 컨페티 ──
 function launchConfetti() {
