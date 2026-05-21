@@ -598,37 +598,41 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   background: #fff;
 }
 
-/* ── 채팅 탭 ── */
-.chat-wrap { display:flex; flex-direction:column; height:calc(100vh - 130px); padding:0; }
-.chat-msgs { flex:1; overflow-y:auto; padding:16px 14px 8px; display:flex; flex-direction:column; gap:10px; }
-.chat-msg { max-width:82%; padding:10px 14px; border-radius:18px; font-size:14px; line-height:1.5; word-break:keep-all; }
-.chat-msg.user { align-self:flex-end; background:#007aff; color:#fff; border-bottom-right-radius:4px; }
-.chat-msg.bot  { align-self:flex-start; background:#f1f1f3; color:#333; border-bottom-left-radius:4px; white-space:pre-line; }
-.chat-msg.bot table { border-collapse:collapse; margin-top:6px; font-size:13px; width:100%; }
-.chat-msg.bot td { padding:3px 8px; border-bottom:1px solid #e5e5e8; vertical-align:top; }
-.chat-msg.bot td:first-child { color:#666; }
-.chat-msg.bot td:last-child { font-weight:600; text-align:right; white-space:nowrap; }
-[data-theme='dark'] .chat-msg.bot { background:#2a3833; color:#dde; }
-[data-theme='dark'] .chat-msg.bot td { border-color:#1e4a3a; }
-[data-theme='dark'] .chat-msg.bot td:first-child { color:#9ab; }
-.chat-suggest { padding:14px; }
-.chat-suggest-title { font-size:13px; color:#888; margin-bottom:10px; padding-left:4px; }
-.chat-suggest-card { background:#f6f7f9; border:1px solid #e5e5e8; border-radius:14px; padding:11px 14px; margin-bottom:8px; font-size:14px; cursor:pointer; transition:all .15s; }
-.chat-suggest-card:hover { background:#e9ecf0; }
+/* ── 물어보기 탭 ── */
+.chat-wrap { min-height:calc(100vh - 130px); padding:12px 14px 28px; background:#fffaf0; }
+.ask-panel { position:sticky; top:56px; z-index:60; background:#fffaf0; padding-bottom:10px; }
+.ask-title { margin-bottom:8px; color:#8a654f; font-size:13px; font-weight:550; line-height:1.35; }
+.ask-input-row { display:flex; gap:8px; align-items:center; background:#fffdf9; border:1px solid #f3dfc7; border-radius:14px; padding:8px; box-shadow:0 3px 0 rgba(236,196,129,.22), 0 8px 18px rgba(116,81,45,.05); }
+.ask-input-row input { flex:1; min-width:0; border:0; background:transparent; outline:none; padding:8px 6px; color:#2f2a25; font-size:14px; font-weight:450; }
+.ask-input-row input::placeholder { color:#b19a87; }
+.ask-input-row button { flex:0 0 auto; padding:9px 14px; border:0; border-radius:999px; background:#4f3422; color:#fff; font-size:13px; font-weight:600; cursor:pointer; }
+.ask-input-row button:active { transform:scale(.98); }
+.chat-suggest { display:flex; gap:7px; overflow-x:auto; padding:10px 0 0; -webkit-overflow-scrolling:touch; }
+.chat-suggest::-webkit-scrollbar { display:none; }
+.chat-suggest-title { display:none; }
+.chat-suggest-card { flex:0 0 auto; background:#fffaf2; border:1px solid #ead7c0; color:#745845; border-radius:999px; padding:8px 11px; font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; }
+.chat-suggest-card:hover { background:#fff2de; }
 .chat-suggest-card:active { transform:scale(0.98); }
-[data-theme='dark'] .chat-suggest-card { background:#1a2622; border-color:#1e4a3a; color:#dde; }
-[data-theme='dark'] .chat-suggest-card:hover { background:#243430; }
-.chat-choice-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
-.chat-choice-btn { border:1px solid #d7dbe0; background:#fff; color:#1d1d1f; border-radius:16px; padding:6px 10px; font-size:12px; font-weight:600; cursor:pointer; }
+.chat-msgs { display:flex; flex-direction:column; gap:10px; padding-top:4px; }
+.chat-msg { width:100%; line-height:1.5; word-break:keep-all; }
+.chat-msg.user { display:flex; justify-content:flex-end; }
+.chat-user-query { max-width:88%; background:#f3e4cf; color:#5d4738; border-radius:16px 16px 4px 16px; padding:9px 12px; font-size:13px; font-weight:500; }
+.chat-msg.bot { background:#fffdf9; border:1px solid #f3dfc7; border-radius:14px; padding:12px; color:#2f2a25; box-shadow:0 3px 0 rgba(236,196,129,.22), 0 8px 18px rgba(116,81,45,.05); }
+.ask-interpret { background:#fff8ed; border:1px dashed #efd8bc; border-radius:12px; padding:9px 10px; margin-bottom:10px; }
+.ask-interpret-title { color:#8a654f; font-size:11px; font-weight:600; margin-bottom:6px; }
+.ask-interpret-tags { display:flex; flex-wrap:wrap; gap:6px; }
+.ask-tag { display:inline-flex; gap:4px; align-items:center; border-radius:999px; background:#fffdf9; border:1px solid #f0dcc4; color:#745845; padding:4px 8px; font-size:11px; font-weight:500; }
+.ask-result-title { color:#4b3528; font-size:13px; font-weight:700; margin-bottom:6px; }
+.ask-text-result { color:#3c332c; font-size:14px; font-weight:450; white-space:pre-line; }
+.ask-result-body { color:#3c332c; font-size:14px; font-weight:450; }
+.chat-msg.bot b { color:#4b3528; font-weight:650; }
+.chat-msg.bot table { border-collapse:collapse; margin-top:8px; font-size:13px; width:100%; }
+.chat-msg.bot td { padding:6px 4px; border-bottom:1px dashed #efd8bc; vertical-align:top; font-weight:450; }
+.chat-msg.bot td:first-child { color:#5d4738; }
+.chat-msg.bot td:last-child { color:#2f2a25; font-weight:600; text-align:right; white-space:nowrap; }
+.chat-choice-row { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.chat-choice-btn { border:1px solid #ead7c0; background:#fffaf2; color:#745845; border-radius:999px; padding:7px 10px; font-size:12px; font-weight:500; cursor:pointer; }
 .chat-choice-btn:active { transform:scale(0.98); }
-[data-theme='dark'] .chat-choice-btn { background:#15211e; border-color:#2a3833; color:#dde; }
-.chat-input-row { display:flex; gap:8px; padding:10px 12px; border-top:1px solid #e5e5e8; background:#fff; position:sticky; bottom:0; }
-[data-theme='dark'] .chat-input-row { background:#0d1816; border-color:#1e4a3a; }
-.chat-input-row input { flex:1; padding:11px 14px; border:1px solid #ccc; border-radius:22px; font-size:14px; outline:none; background:#fff; }
-.chat-input-row input:focus { border-color:#007aff; }
-[data-theme='dark'] .chat-input-row input { background:#1a2622; border-color:#2a3833; color:#dde; }
-.chat-input-row button { padding:0 18px; border:none; background:#007aff; color:#fff; border-radius:22px; font-size:14px; font-weight:600; cursor:pointer; }
-.chat-input-row button:active { opacity:0.8; }
 
 /* 오늘체크 */
 .today-section { padding: 14px 16px 28px; background: #fffaf0; min-height: calc(100vh - 100px); }
@@ -744,6 +748,7 @@ body { color: #2f2a25; }
 .pw-btn,
 .modal-save,
 .chat-input-row button,
+.ask-input-row button,
 .tab-btn.active {
   background: #4f3422;
   color: #fff;
@@ -826,7 +831,7 @@ body { color: #2f2a25; }
     <span class="icon">🏷️</span><span>엑셀변환</span>
   </button>
   <button class="tab-bar-btn" id="tbChat" onclick="switchView('chat')">
-    <span class="icon">💬</span><span>채팅</span>
+    <span class="icon">💬</span><span>물어보기</span>
   </button>
   </div>
 
@@ -993,20 +998,22 @@ body { color: #2f2a25; }
 <!-- ── 채팅 뷰 ── -->
 <div class="view" id="view-chat">
   <div class="chat-wrap">
+    <div class="ask-panel">
+      <div class="ask-title">💬 궁금한 걸 바로 물어보세요.</div>
+      <div class="ask-input-row">
+        <input id="chatInput" placeholder="예: 이번 달 슬라임 딸깍이 매출" autocomplete="off">
+        <button id="chatSend">전송</button>
+      </div>
+      <div class="chat-suggest" id="chatSuggest">
+        <div class="chat-suggest-card" data-q="이번 달 포켓몬카드 매출">포켓몬카드 매출</div>
+        <div class="chat-suggest-card" data-q="토미카 판매 순위">토미카 순위</div>
+        <div class="chat-suggest-card" data-q="문구 중에서 5월에 판매 끊긴 상품">판매 끊긴 문구</div>
+        <div class="chat-suggest-card" data-q="지난주 아이스크림 베스트 10">아이스크림 베스트</div>
+        <div class="chat-suggest-card" data-q="이번 달 1호점 vs 2호점 매출">지점 비교</div>
+        <div class="chat-suggest-card" data-q="슬라임">슬라임</div>
+      </div>
+    </div>
     <div class="chat-msgs" id="chatMsgs"></div>
-    <div class="chat-suggest" id="chatSuggest">
-      <div class="chat-suggest-title">💡 이렇게 물어보세용</div>
-      <div class="chat-suggest-card" data-q="이번 달 포켓몬카드 매출">이번 달 포켓몬카드 매출</div>
-      <div class="chat-suggest-card" data-q="완구 카테고리 베스트 10">완구 카테고리 베스트 10</div>
-      <div class="chat-suggest-card" data-q="2주 안 팔린 고가 상품">2주 안 팔린 고가 상품</div>
-      <div class="chat-suggest-card" data-q="2000원 베스트 10">2000원 베스트 10</div>
-      <div class="chat-suggest-card" data-q="이번 달 1호점 vs 2호점 매출">이번 달 1호점 vs 2호점 매출</div>
-      <div class="chat-suggest-card" data-q="슬라임 매출">슬라임 매출</div>
-    </div>
-    <div class="chat-input-row">
-      <input id="chatInput" placeholder="질문을 입력하세용..." autocomplete="off">
-      <button id="chatSend">전송</button>
-    </div>
   </div>
 </div>
 </div><!-- /appBody -->
@@ -2750,8 +2757,6 @@ function initChatTab(){
   document.querySelectorAll('.chat-suggest-card').forEach(c => {
     c.addEventListener('click', () => {
       sendChat(c.getAttribute('data-q'));
-      const sg = document.getElementById('chatSuggest');
-      if (sg) sg.style.display = 'none';
     });
   });
   const msgs = document.getElementById('chatMsgs');
@@ -2770,11 +2775,11 @@ function addChatMsg(role, text, html){
   const box = document.getElementById('chatMsgs');
   const d = document.createElement('div');
   d.className = 'chat-msg ' + role;
-  if (html) d.innerHTML = html; else d.textContent = text;
+  if (role === 'user') d.innerHTML = '<div class="chat-user-query">' + escapeHtml(text) + '</div>';
+  else if (html) d.innerHTML = html;
+  else d.innerHTML = answerCardHtml(text || '', { text: text || '' });
   box.appendChild(d);
   box.scrollTop = box.scrollHeight;
-  const sg = document.getElementById('chatSuggest');
-  if (sg) sg.style.display = 'none';
 }
 
 function sendChat(forceText){
@@ -2782,7 +2787,8 @@ function sendChat(forceText){
   let q = (forceText || inp.value).trim();
   if (!q) return;
   inp.value = '';
-  addChatMsg('user', q);
+  const originalQ = q;
+  addChatMsg('user', originalQ);
   setTimeout(() => {
     try {
       const periodChoice = pendingChatQuery ? periodOnlyChoice(q) : null;
@@ -2791,10 +2797,9 @@ function sendChat(forceText){
         pendingChatQuery = null;
       }
       const r = handleChatQuery(q);
-      if (r.html) addChatMsg('bot', null, r.html);
-      else addChatMsg('bot', r.text);
+      addChatMsg('bot', null, answerCardHtml(q, r));
     } catch(e) {
-      addChatMsg('bot', '오류가 났어용. (' + e.message + ')');
+      addChatMsg('bot', null, answerCardHtml(originalQ, { text: '오류가 났어용. (' + e.message + ')' }));
     }
   }, 100);
 }
@@ -2807,10 +2812,53 @@ function chatButton(label, q){
   return '<button class="chat-choice-btn" data-q="' + escapeHtml(q) + '">' + escapeHtml(label) + '</button>';
 }
 function clarifyHtml(text, choices){
-  let html = escapeHtml(text) + '<div class="chat-choice-row">';
+  let html = '<div class="ask-text-result">' + escapeHtml(text) + '</div><div class="chat-choice-row">';
   for (const c of choices) html += chatButton(c.label, c.q);
   html += '</div>';
-  return { html: html };
+  return { html: html, clarify: true };
+}
+function storeLabelForQuestion(q){
+  if (/1호점|일호점|철산/.test(q)) return '1호점';
+  if (/2호점|이호점|푸르지오/.test(q)) return '2호점';
+  return '전체 지점';
+}
+function inferChatIntent(q){
+  if (/품절|단종|진열\s*빠짐|진열빠짐|끊긴|안\s*팔린|0\s*개|제로/.test(q)) return '판매 끊김 확인';
+  if (/(vs|대비|비교|매장별)/i.test(q)) return '지점 비교';
+  if (/베스트|순위|랭킹|top/i.test(q)) return '판매 순위';
+  if (/마지막\s*판매/.test(q)) return '마지막 판매일';
+  if (/원\s*(?:이하|이상|대|짜리)|\d+\s*[-~]\s*\d+/.test(q)) return '가격대 순위';
+  if (/몇\s*개|수량|판매량|개수/.test(q)) return '판매수량';
+  if (/매출|금액|얼마/.test(q)) return '매출액';
+  return '질문 보완';
+}
+function inferChatSubjectLabel(q){
+  const subjectText = stripQuestionWords(q);
+  const tokens = splitSubjectTokens(subjectText);
+  if (tokens.length) return tokens.slice(0, 5).join(', ') + (tokens.length > 5 ? ' 외' : '');
+  if (/전체|합계|양\s*매장|전\s*매장/.test(q)) return '전체';
+  return '대상 확인 필요';
+}
+function chatInterpretationHtml(q){
+  let periodLabel = '이번 달(기본)';
+  try { periodLabel = hasExplicitPeriod(q) ? extractPeriod(q).label : '이번 달(기본)'; } catch(e) {}
+  const tags = [
+    ['기간', periodLabel],
+    ['지점', storeLabelForQuestion(q)],
+    ['대상', inferChatSubjectLabel(q)],
+    ['기준', inferChatIntent(q)],
+  ];
+  let html = '<div class="ask-interpret"><div class="ask-interpret-title">질문 해석</div><div class="ask-interpret-tags">';
+  for (const t of tags) html += '<span class="ask-tag"><b>' + escapeHtml(t[0]) + '</b> ' + escapeHtml(t[1]) + '</span>';
+  html += '</div></div>';
+  return html;
+}
+function answerCardHtml(q, result){
+  const title = result && result.clarify ? '확인할게요' : '답변';
+  const body = result && result.html
+    ? result.html
+    : '<div class="ask-text-result">' + escapeHtml(result && result.text ? result.text : '') + '</div>';
+  return chatInterpretationHtml(q) + '<div class="ask-result-title">' + title + '</div><div class="ask-result-body">' + body + '</div>';
 }
 function todayStr(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function latestDataDate(){ return DAILY.length ? DAILY[DAILY.length - 1].d : todayStr(); }
@@ -2977,8 +3025,15 @@ function stripQuestionWords(q){
 }
 
 function splitSubjectTokens(text){
-  return text
+  const direct = resolveSubject(text);
+  if (direct) return [text];
+  const separated = text
     .split(/\s*(?:,|，|ㆍ|·|\/|\+|그리고|및|하고)\s*/g)
+    .map(t => t.trim().replace(/^(은|는|이|가)\s*/, '').replace(/\s*(은|는|이|가|의)$/,''))
+    .filter(Boolean);
+  if (separated.length > 1) return separated;
+  return text
+    .split(/\s+/g)
     .map(t => t.trim().replace(/^(은|는|이|가)\s*/, '').replace(/\s*(은|는|이|가|의)$/,''))
     .filter(Boolean);
 }
