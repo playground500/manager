@@ -114,8 +114,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .trend-note { margin-top: 7px; font-size: 10px; color: #9a8c80; line-height: 1.35; }
 
 /* ══════════ 발주 우선순위 추천기 ══════════ */
-.ro-header { background: #fffaf0; padding: 12px 16px 0; position: sticky; top: 56px; z-index: 90;
-              box-shadow: 0 1px 0 rgba(116,81,45,.10); }
+.ro-header { background: #fffaf0; padding: 12px 16px 0; position: sticky; top: 56px; z-index: 90; }
 .priority-title { padding: 0 0 8px; }
 .priority-title .eyebrow,
 .priority-title .main { display: none; }
@@ -187,17 +186,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .stock-check { padding: 12px 16px 24px; display: grid; gap: 10px; }
 .stock-section { background: #fffdf8; border: 1px solid #f0ddc7; border-radius: 14px; overflow: hidden;
                  box-shadow: 0 6px 18px rgba(116,81,45,.06); }
-.stock-toggle { width: 100%; border: 0; background: transparent; padding: 14px 14px;
+.stock-toggle { width: 100%; border: 0; background: transparent; padding: 12px 14px;
                 display: flex; align-items: center; justify-content: space-between; gap: 10px;
                 text-align: left; cursor: pointer; color: #4f3422; }
-.stock-toggle-title { font-size: 15px; font-weight: 750; line-height: 1.3; }
+.stock-toggle:after { content: '열기'; font-size: 11px; font-weight: 500; color: #9a735a; background: #fff2de;
+                      border-radius: 999px; padding: 4px 8px; flex: 0 0 auto; }
+.stock-section.open .stock-toggle:after { content: '닫기'; }
+.stock-toggle-title { font-size: 14px; font-weight: 750; line-height: 1.3; }
 .stock-toggle-sub { margin-top: 3px; font-size: 11px; font-weight: 500; color: #9a8c80; line-height: 1.35; }
-.stock-chevron { font-size: 14px; color: #9a8c80; transition: transform .18s; }
-.stock-section.open .stock-chevron { transform: rotate(180deg); }
 .stock-body { display: none; padding: 0 12px 14px; }
 .stock-section.open .stock-body { display: block; }
+.stock-controls { display: grid; gap: 8px; margin: 0 0 10px; }
+.stock-control-row { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 8px; }
+.stock-control-label { font-size: 11px; color: #9a8c80; font-weight: 500; }
+.stock-segment { display: flex; gap: 6px; min-width: 0; }
+.stock-view-btn { border: 1px solid #ead7c0; background: #fffaf2; color: #684a34; border-radius: 999px; padding: 7px 10px;
+                  font-size: 12px; font-weight: 500; cursor: pointer; flex: 1; min-width: 0; }
+.stock-view-btn.active { background: #4f3422; border-color: #4f3422; color: #fff; }
 .stock-store-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .stock-store-card { background: #fff; border: 1px solid #f3e1cd; border-radius: 12px; overflow: hidden; }
+.stock-store-grid .stock-store-card:only-child { grid-column: 1 / -1; }
 .stock-store-head { padding: 9px 10px; font-size: 12px; font-weight: 750; color: #6f6258; background: #fff8ed; }
 .stock-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center;
              padding: 9px 10px; border-top: 1px solid #f5eadf; }
@@ -858,7 +866,7 @@ body { color: #2f2a25; }
 <div class="view" id="view-reorder">
   <div class="ro-header">
     <div class="priority-title">
-      <div class="sub">💬 재고 확인이 필요한 상품을 이유별로 모았습니다.</div>
+      <div class="sub">💬 재고 확인이 필요한 상품을 이유별로 모았어요.</div>
     </div>
   </div>
   <div class="stock-check" id="stockCheck"></div>
@@ -1694,6 +1702,8 @@ function closeDayDetail(){
 // ══ 재고 체크 ══
 const STORAGE_KEY = 'playground_stock_check_v1';
 let roState = {};
+let stockOpenState = {};
+let stockStoreView = { stockIcecream: 'all', stockSnack: 'all' };
 const STOCK_STATUS_LABELS = ['미확인', '발주완', '제외'];
 const STOCK_STATUS_CLASSES = ['s0', 's1', 's2'];
 
@@ -1705,7 +1715,10 @@ function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(roState))
 function getItemState(id){ return roState[id] || {status:0, updatedAt:''}; }
 function stockStatusBtn(id){
   const st = getItemState(id).status || 0;
-  return `<button class="stock-status-btn ${STOCK_STATUS_CLASSES[st]}" onclick='event.stopPropagation();cycleStockStatus(${escapeHtml(JSON.stringify(id))})'>${STOCK_STATUS_LABELS[st]}</button>`;
+  return `<button class="stock-status-btn ${STOCK_STATUS_CLASSES[st]}" data-stock-id="${escapeHtml(id)}" onclick="event.stopPropagation();cycleStockStatusByButton(this)">${STOCK_STATUS_LABELS[st]}</button>`;
+}
+function cycleStockStatusByButton(btn){
+  cycleStockStatus(btn.getAttribute('data-stock-id'));
 }
 function cycleStockStatus(id){
   const st = getItemState(id);
@@ -1720,13 +1733,21 @@ function shortDateLabel(dateStr){
   return parseInt(parts[1]) + '월 ' + parseInt(parts[2]) + '일';
 }
 function formatWeekRange(){
-  const d = STOCK_CHECK_DATA || {};
-  if (!d.weekStart || !d.weekEnd) return '직전 완료 주간';
-  return shortDateLabel(d.weekStart) + ' ~ ' + shortDateLabel(d.weekEnd);
+  return '지난주(월~일요일)';
 }
 function toggleStockSection(id){
   const el = document.getElementById(id);
-  if (el) el.classList.toggle('open');
+  if (!el) return;
+  const next = !el.classList.contains('open');
+  stockOpenState[id] = next;
+  el.classList.toggle('open', next);
+}
+function setStockStoreView(sectionId, store, btn){
+  stockStoreView[sectionId] = store;
+  const section = document.getElementById(sectionId);
+  if (section) section.querySelectorAll('.stock-view-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderList();
 }
 function renderStoreList(items){
   if (!items || !items.length) return '<div class="stock-row"><div class="stock-row-name">판매 기록이 없어요</div><div class="stock-row-value">-</div></div>';
@@ -1738,24 +1759,52 @@ function renderStoreList(items){
       <div class="stock-row-value">${item.qty||0}개</div>
     </div>`).join('');
 }
+function mergeStoreItems(data){
+  const merged = {};
+  for (const store of ['s1','s2']) {
+    for (const item of (data[store] || [])) {
+      const key = item.name;
+      if (!merged[key]) merged[key] = {name:item.name, qty:0, sales:0, price:item.price || 0};
+      merged[key].qty += item.qty || 0;
+      merged[key].sales += item.sales || 0;
+      merged[key].price = item.price || merged[key].price;
+    }
+  }
+  return Object.values(merged).sort((a,b) => b.qty - a.qty || b.sales - a.sales || a.name.localeCompare(b.name, 'ko'));
+}
+function weeklyRowsForView(data, store, limit){
+  if (store === 's1') return (data.s1 || []).slice(0, limit);
+  if (store === 's2') return (data.s2 || []).slice(0, limit);
+  return mergeStoreItems(data).slice(0, limit);
+}
 function stockWeeklySection(id, title, sub, data){
-  return `<section class="stock-section open" id="${id}">
+  const open = !!stockOpenState[id];
+  const store = stockStoreView[id] || 'all';
+  const limit = id === 'stockIcecream' ? 50 : 30;
+  const rows = weeklyRowsForView(data || {s1:[], s2:[]}, store, limit);
+  const storeLabel = store === 's1' ? '1호점 철산' : store === 's2' ? '2호점 푸르지오' : '전체 지점';
+  return `<section class="stock-section ${open ? 'open' : ''}" id="${id}">
     <button class="stock-toggle" onclick="toggleStockSection('${id}')">
       <div>
         <div class="stock-toggle-title">${title}</div>
         <div class="stock-toggle-sub">${sub}</div>
       </div>
-      <span class="stock-chevron">⌄</span>
     </button>
     <div class="stock-body">
+      <div class="stock-controls">
+        <div class="stock-control-row">
+          <div class="stock-control-label">지점</div>
+          <div class="stock-segment">
+            <button class="stock-view-btn ${store === 'all' ? 'active' : ''}" onclick="setStockStoreView('${id}','all',this)">전체</button>
+            <button class="stock-view-btn ${store === 's1' ? 'active' : ''}" onclick="setStockStoreView('${id}','s1',this)">1호점</button>
+            <button class="stock-view-btn ${store === 's2' ? 'active' : ''}" onclick="setStockStoreView('${id}','s2',this)">2호점</button>
+          </div>
+        </div>
+      </div>
       <div class="stock-store-grid">
         <div class="stock-store-card">
-          <div class="stock-store-head">1호점 철산 · 많이 팔린 순</div>
-          ${renderStoreList(data.s1 || [])}
-        </div>
-        <div class="stock-store-card">
-          <div class="stock-store-head">2호점 푸르지오 · 많이 팔린 순</div>
-          ${renderStoreList(data.s2 || [])}
+          <div class="stock-store-head">${storeLabel} · 많이 팔린 순</div>
+          ${renderStoreList(rows)}
         </div>
       </div>
     </div>
@@ -1767,7 +1816,7 @@ function stationeryStoppedItems(){
     .sort((a,b) => b.prevQty - a.prevQty || b.prevSales - a.prevSales || a.name.localeCompare(b.name, 'ko'));
 }
 function renderStoppedPaperList(items){
-  if (!items.length) return '<div class="empty"><div class="empty-icon">📭</div><div>끊긴 문구 상품이 없어요</div></div>';
+  if (!items.length) return '<div class="empty"><div class="empty-icon">📭</div><div>판매 멈춤 후보가 없어요</div></div>';
   return items.map((item, idx) => {
     const id = 'stopped:' + item.barcode;
     return `<div class="stock-paper-card">
@@ -1791,13 +1840,13 @@ function renderHighPriceList(items){
   }).join('');
 }
 function stockPaperSection(id, title, sub, bodyHtml, note){
-  return `<section class="stock-section open" id="${id}">
+  const open = !!stockOpenState[id];
+  return `<section class="stock-section ${open ? 'open' : ''}" id="${id}">
     <button class="stock-toggle" onclick="toggleStockSection('${id}')">
       <div>
         <div class="stock-toggle-title">${title}</div>
         <div class="stock-toggle-sub">${sub}</div>
       </div>
-      <span class="stock-chevron">⌄</span>
     </button>
     <div class="stock-body">
       <div class="stock-paper-list">${bodyHtml}</div>
@@ -1813,7 +1862,7 @@ function renderList(){
   const high = (STOCK_CHECK_DATA && STOCK_CHECK_DATA.highPrice) || [];
   wrap.innerHTML =
     stockWeeklySection('stockIcecream', '아이스크림', week + ' · 지점별 상위 50개', (STOCK_CHECK_DATA && STOCK_CHECK_DATA.icecream) || {s1:[], s2:[]}) +
-    stockPaperSection('stockPaperStopped', '문구 · 끊긴 상품', STOP_CANDIDATES.prevMonth + ' 3개 이상 판매 · ' + STOP_CANDIDATES.currentMonth + ' 0개', renderStoppedPaperList(stopped), '발주누락, 품절, 진열 빠짐을 의심해볼 상품입니다. 포켓몬카드는 제외했어요.') +
+    stockPaperSection('stockPaperStopped', '문구 · 판매 멈춤 후보', STOP_CANDIDATES.prevMonth + ' 3개 이상 판매 · ' + STOP_CANDIDATES.currentMonth + ' 0개', renderStoppedPaperList(stopped), '발주누락, 품절, 진열 빠짐을 의심해볼 상품입니다. 포켓몬카드는 제외했어요.') +
     stockPaperSection('stockPaperHigh', '문구 · 고단가 확인', '최근 14일 판매된 10,000원 이상 상품', renderHighPriceList(high), '소비자가 10,000원 이상, 포켓몬카드 제외 기준입니다.') +
     stockWeeklySection('stockSnack', '과자', week + ' · 지점별 상위 30개', (STOCK_CHECK_DATA && STOCK_CHECK_DATA.snack) || {s1:[], s2:[]});
 }
