@@ -7,17 +7,18 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-       background: #fffaf0; color: #1d1d1f; min-height: 100vh; padding-top: 100px;
+       background: #fffaf0; color: #1d1d1f; min-height: 100vh; padding-top: 108px;
        overflow-x: hidden; }
 
 /* ── 앱 헤더 ── */
-.app-header { background: #fffdf7; padding: 12px 16px 10px; position: fixed; top: 0; left: 0; right: 0; z-index: 150;
-              box-shadow: 0 1px 0 rgba(116,81,45,.12); }
-.app-title { font-size: 17px; font-weight: 700; color: #1d1d1f; }
+.app-header { background: #fffdf7; height: 52px; padding: 5px 16px; position: fixed; top: 0; left: 0; right: 0; z-index: 150;
+              box-shadow: 0 1px 0 rgba(116,81,45,.12); display: flex; align-items: center; justify-content: center; }
+.app-logo-img { width: 42px; height: 42px; object-fit: contain; display: block; }
+.app-title { display: none; }
 .app-sub { display: none; }
 
 /* ── 상단 탭바 ── */
-.tab-bar { position: fixed; top: 44px; left: 0; right: 0; background: #fffdf7;
+.tab-bar { position: fixed; top: 52px; left: 0; right: 0; background: #fffdf7;
             border-bottom: 2px solid rgba(116,81,45,.12); display: flex; z-index: 200; }
 .tab-bar-btn { flex: 1; padding: 6px 0 7px; border: none; background: none; cursor: pointer;
                 font-size: 10px; font-weight: 600; color: #86868b; display: flex; flex-direction: column;
@@ -30,30 +31,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .view.active { display: block !important; }
 
 /* ══════════ 매출 트래커 ══════════ */
-.sales-section { padding: 12px 16px; }
+.sales-section { padding: 14px 16px 0; }
 
-/* 전체 누적 카드 */
-.total-card { background: linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%);
-               border-radius: 18px; padding: 18px 20px; color: #fff; margin-bottom: 12px; }
-.total-label { font-size: 12px; opacity: .7; margin-bottom: 6px; }
-.total-amount { font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
-.total-sub { font-size: 11px; opacity: .6; margin-top: 4px; }
+/* 전체 누적 */
+.total-card { padding: 0 0 10px; color: #8a654f; font-size: 13px; font-weight: 750; line-height: 1.45; }
+.total-amount { letter-spacing: 0; }
+.op-days { color: #a58b79; font-size: 11px; font-weight: 500; margin-left: 3px; }
 
 /* 1호점 / 2호점 카드 */
-.store-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.store-card { background: #fff; border-radius: 16px; padding: 14px;
-               box-shadow: 0 1px 4px rgba(0,0,0,.07); }
-.store-card.s1 { border-top: 3px solid #34c759; }
-.store-card.s2 { border-top: 3px solid #007aff; }
-.store-name { font-size: 12px; font-weight: 700; color: #636366; margin-bottom: 10px; }
+.store-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.store-card { background: #fffdf9; border: 1px solid #f1dac0; border-radius: 12px; padding: 14px;
+               box-shadow: 0 3px 0 rgba(236,196,129,.26), 0 8px 20px rgba(91,64,32,.05); }
+.store-name { font-size: 14px; font-weight: 850; color: #4b3528; margin-bottom: 10px; }
 .store-stat { margin-bottom: 8px; }
 .store-stat .lbl { font-size: 10px; color: #aeaeb2; margin-bottom: 2px; }
 .store-stat .val { font-size: 15px; font-weight: 700; color: #1d1d1f; }
 .store-stat .val.highlight { color: #ff3b30; }
 
 /* 달력 섹션 */
-.cal-section { background: #fff; border-radius: 18px; margin: 0 12px 12px;
-                box-shadow: 0 1px 4px rgba(0,0,0,.07); overflow: hidden; }
+.cal-section { background: #fffdf9; border: 1px solid #f1dac0; border-radius: 12px; margin: 0 16px 12px;
+                box-shadow: 0 3px 0 rgba(236,196,129,.26), 0 8px 20px rgba(91,64,32,.05); overflow: hidden; }
 .cal-header { display: flex; align-items: center; justify-content: space-between;
                padding: 14px 16px 10px; }
 .cal-month { font-size: 16px; font-weight: 700; }
@@ -86,27 +83,56 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .cal-total-row { padding: 10px 16px 14px; border-top: 1px solid #f2f2f7; display: flex; justify-content: space-between; align-items: center; }
 .cal-total-label { font-size: 12px; color: #636366; font-weight: 500; }
 .cal-total-val { font-size: 15px; font-weight: 700; color: #1d1d1f; }
+.trend-entry { padding: 0 16px 12px; }
+.trend-card { background: #fffdf9; border: 1px solid #f1dac0; border-radius: 12px;
+              box-shadow: 0 3px 0 rgba(236,196,129,.26), 0 8px 20px rgba(91,64,32,.05); overflow: hidden; }
+.trend-toggle { width: 100%; border: none; background: transparent; padding: 12px 14px; color: #4f3422;
+                font-size: 14px; font-weight: 800; text-align: left; cursor: pointer; display: flex;
+                align-items: center; justify-content: space-between; gap: 8px; }
+.trend-toggle:after { content: '열기'; font-size: 11px; font-weight: 800; color: #9a735a; background: #fff2de;
+                      border-radius: 999px; padding: 4px 8px; flex: 0 0 auto; }
+.trend-toggle.active:after { content: '닫기'; }
+.trend-panel { border-top: 1px solid #f1dac0; padding: 12px; background: #fff; }
+.trend-controls { display: grid; gap: 8px; margin-bottom: 10px; }
+.trend-control-row { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 8px; }
+.trend-control-label { font-size: 11px; color: #9a8c80; font-weight: 800; }
+.trend-segment { display: flex; gap: 6px; min-width: 0; }
+.trend-btn { border: 1px solid #ead7c0; background: #fffaf2; color: #684a34; border-radius: 999px; padding: 7px 10px;
+             font-size: 12px; font-weight: 800; cursor: pointer; flex: 1; min-width: 0; }
+.trend-btn.active { background: #4f3422; border-color: #4f3422; color: #fff; }
+.trend-summary { display: grid; gap: 5px; margin: 2px 0 10px; font-size: 11px; line-height: 1.35; color: #6f6258; }
+.trend-chart-wrap { width: 100%; height: 240px; position: relative; }
+#categoryTrendCanvas { width: 100%; height: 240px; display: block; }
+.trend-tooltip { position: absolute; transform: translate(-50%, -120%); min-width: 86px; max-width: 160px;
+                 padding: 7px 9px; border-radius: 10px; background: rgba(49,36,29,.94); color: #fff;
+                 font-size: 11px; font-weight: 750; line-height: 1.35; text-align: center; pointer-events: none;
+                 box-shadow: 0 8px 18px rgba(49,36,29,.22); z-index: 2; }
+.trend-tooltip[hidden] { display: none; }
+.trend-legend { display: flex; flex-wrap: wrap; gap: 8px 10px; margin-top: 10px; font-size: 11px; color: #6e6e73; }
+.trend-legend-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.trend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.trend-note { margin-top: 7px; font-size: 10px; color: #9a8c80; line-height: 1.35; }
 
 /* ══════════ 발주 우선순위 추천기 ══════════ */
-.ro-header { background: #fff; padding: 12px 16px 0; position: sticky; top: 56px; z-index: 90;
-              box-shadow: 0 1px 0 rgba(0,0,0,.06); }
-.priority-title { padding: 0 0 10px; }
+.ro-header { background: #fffaf0; padding: 12px 16px 0; position: sticky; top: 56px; z-index: 90;
+              box-shadow: 0 1px 0 rgba(116,81,45,.10); }
+.priority-title { padding: 0 0 8px; }
 .priority-title .eyebrow,
 .priority-title .main { display: none; }
 .priority-title .sub { margin-top: 0; font-size: 13px; color: #8a654f; line-height: 1.45; font-weight: 750; }
-.search-box { width: 100%; padding: 9px 14px; border-radius: 10px; border: none;
-               background: #f2f2f7; font-size: 15px; color: #1d1d1f; outline: none; margin-bottom: 10px; }
-.tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+.search-box { width: 100%; padding: 9px 14px; border-radius: 10px; border: 1px solid #f1dac0;
+               background: #fffdf9; font-size: 15px; color: #1d1d1f; outline: none; margin-bottom: 8px; }
+.ro-header .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 0; border: 0; border-radius: 0; scrollbar-width: none; justify-content: flex-start; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
         border: none; background: #f2f2f7; color: #636366; cursor: pointer; transition: all .2s; }
 .tab.active { background: #1d1d1f; color: #fff; }
-.filter-row { display: flex; gap: 6px; padding: 0 16px 8px; overflow-x: auto; scrollbar-width: none; }
+.filter-row { display: flex; gap: 6px; padding: 0 0 8px; overflow-x: auto; scrollbar-width: none; justify-content: flex-start; }
 .filter-row::-webkit-scrollbar { display: none; }
 .filter-btn { flex-shrink: 0; padding: 5px 12px; border-radius: 20px; font-size: 12px;
                border: 1.5px solid #e0e0e0; background: #fff; color: #636366; cursor: pointer; }
 .filter-btn.active { border-color: #1d1d1f; color: #1d1d1f; font-weight: 600; }
-.summary { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; }
+.summary { display: flex; gap: 8px; padding: 8px 16px 10px; overflow-x: auto; scrollbar-width: none; }
 .summary::-webkit-scrollbar { display: none; }
 .sum-card { flex-shrink: 0; background: #fff; border-radius: 14px; padding: 12px 16px;
              min-width: 100px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
@@ -552,7 +578,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
 <!-- 앱 헤더 -->
 <div class="app-header">
-  <div class="app-title">플레이그라운드 운영 매니저</div>
+  <img class="app-logo-img" src="assets/playground-logo-circle.png" alt="플레이그라운드">
   <div class="app-sub" id="appDate"></div>
 </div>
 
@@ -591,23 +617,60 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   <div class="sales-section">
     <!-- 전체 누적 -->
     <div class="total-card">
-      <div class="total-label">1호점 + 2호점 전체 누적 매출</div>
-      <div class="total-amount" id="totalAll">-</div>
-      <div class="total-sub" id="totalPeriod"></div>
+      <div class="total-amount">🏆 누적 매출 <span id="totalAll">-</span> 달성 중! <span class="op-days" id="operationDays"></span></div>
     </div>
     <!-- 1호점 / 2호점 카드 -->
     <div class="store-cards">
       <div class="store-card s1">
-        <div class="store-name">🟢 1호점 (철산)</div>
+        <div class="store-name">1호점 (철산)</div>
         <div class="store-stat"><div class="lbl">어제 매출</div><div class="val" id="s1Yesterday">-</div></div>
         <div class="store-stat"><div class="lbl">이번 달 일평균</div><div class="val" id="s1AvgDay">-</div></div>
         <div class="store-stat"><div class="lbl">이번 달 누적</div><div class="val highlight" id="s1MonthTotal">-</div></div>
       </div>
       <div class="store-card s2">
-        <div class="store-name">🔵 2호점 (푸르지오)</div>
+        <div class="store-name">2호점 (푸르지오)</div>
         <div class="store-stat"><div class="lbl">어제 매출</div><div class="val" id="s2Yesterday">-</div></div>
         <div class="store-stat"><div class="lbl">이번 달 일평균</div><div class="val" id="s2AvgDay">-</div></div>
         <div class="store-stat"><div class="lbl">이번 달 누적</div><div class="val highlight" id="s2MonthTotal">-</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trend-entry">
+    <div class="trend-card">
+      <button class="trend-toggle" id="categoryTrendToggle" onclick="toggleCategoryTrend()">📈 카테고리별 판매 추이</button>
+      <div class="trend-panel" id="categoryTrendPanel" hidden>
+        <div class="trend-controls">
+          <div class="trend-control-row">
+            <div class="trend-control-label">기간</div>
+            <div class="trend-segment">
+              <button class="trend-btn trend-period active" onclick="setCategoryTrendPeriod('month', this)">월별</button>
+              <button class="trend-btn trend-period" onclick="setCategoryTrendPeriod('week', this)">주차별</button>
+            </div>
+          </div>
+          <div class="trend-control-row">
+            <div class="trend-control-label">지점</div>
+            <div class="trend-segment">
+              <button class="trend-btn trend-store active" onclick="setCategoryTrendStore('both', this)">전체</button>
+              <button class="trend-btn trend-store" onclick="setCategoryTrendStore('s1', this)">1호점</button>
+              <button class="trend-btn trend-store" onclick="setCategoryTrendStore('s2', this)">2호점</button>
+            </div>
+          </div>
+          <div class="trend-control-row">
+            <div class="trend-control-label">기준</div>
+            <div class="trend-segment">
+              <button class="trend-btn trend-metric active" onclick="setCategoryTrendMetric('sales', this)">매출액</button>
+              <button class="trend-btn trend-metric" onclick="setCategoryTrendMetric('qty', this)">판매수량</button>
+            </div>
+          </div>
+        </div>
+      <div class="trend-summary" id="categoryTrendSummary"></div>
+      <div class="trend-chart-wrap">
+        <canvas id="categoryTrendCanvas"></canvas>
+        <div class="trend-tooltip" id="categoryTrendTooltip" hidden></div>
+      </div>
+        <div class="trend-legend" id="categoryTrendLegend"></div>
+        <div class="trend-note" id="categoryTrendNote"></div>
       </div>
     </div>
   </div>
@@ -1038,6 +1101,19 @@ function renderTodayCheck(){
   </div>`;
 }
 let calYear, calMonth, calStore = 'both';
+let categoryTrendOpen = false;
+let categoryTrendStore = 'both';
+let categoryTrendMetric = 'sales';
+let categoryTrendPeriod = 'month';
+const CATEGORY_TREND_START = '2026-03';
+const CATEGORY_TRENDS = [
+  { key:'stationery', label:'문구', color:'#111827' },
+  { key:'icecream', label:'아이스크림', color:'#ff6fae' },
+  { key:'pokemon', label:'포켓몬카드', color:'#16a34a' },
+  { key:'snack', label:'과자', color:'#ef4444' },
+  { key:'drink', label:'음료', color:'#2563eb' },
+];
+const FOOD_CATS_OUTSIDE_TRENDS = new Set(['냉동', '기타 식품류']);
 
 function initSales(){
   const today = new Date();
@@ -1061,7 +1137,8 @@ function initSales(){
   const maxDate = DAILY[DAILY.length-1]?.d || '';
 
   document.getElementById('totalAll').textContent = fmtFull(totalS1+totalS2);
-  document.getElementById('totalPeriod').textContent = `${minDate} ~ ${maxDate}`;
+  const opDays = minDate && maxDate ? daysBetween(minDate, maxDate) + 1 : 0;
+  document.getElementById('operationDays').textContent = opDays ? `운영 ${opDays}일차` : '';
   document.getElementById('s1Yesterday').textContent = fmtFull(yestData.s1);
   document.getElementById('s2Yesterday').textContent = fmtFull(yestData.s2);
   document.getElementById('s1AvgDay').textContent = fmtFull(Math.round(s1Month/days));
@@ -1074,6 +1151,7 @@ function initSales(){
     `${today2.getMonth()+1}/${today2.getDate()} 기준`;
 
   renderCalendar();
+  if (categoryTrendOpen) renderCategoryTrend();
 }
 function setCalStore(store, el){
   calStore = store;
@@ -1086,6 +1164,304 @@ function changeMonth(delta){
   if (calMonth < 0) { calMonth = 11; calYear--; }
 if (calMonth > 11){ calMonth = 0; calYear++; }
 renderCalendar();
+}
+function toggleCategoryTrend(){
+  categoryTrendOpen = !categoryTrendOpen;
+  const panel = document.getElementById('categoryTrendPanel');
+  const btn = document.getElementById('categoryTrendToggle');
+  if (!panel || !btn) return;
+  panel.hidden = !categoryTrendOpen;
+  btn.classList.toggle('active', categoryTrendOpen);
+  if (categoryTrendOpen) renderCategoryTrend();
+}
+function setCategoryTrendStore(store, el){
+  categoryTrendStore = store;
+  document.querySelectorAll('.trend-store').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderCategoryTrend();
+}
+function setCategoryTrendMetric(metric, el){
+  categoryTrendMetric = metric;
+  document.querySelectorAll('.trend-metric').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderCategoryTrend();
+}
+function setCategoryTrendPeriod(period, el){
+  categoryTrendPeriod = period;
+  document.querySelectorAll('.trend-period').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderCategoryTrend();
+}
+function categoryTrendRowsByDate(){
+  if (categoryTrendStore === 's1') return DAILY_ITEMS_S1 || {};
+  if (categoryTrendStore === 's2') return DAILY_ITEMS_S2 || {};
+  return DAILY_ITEMS || {};
+}
+function categoryTrendKey(name){
+  const p = productInfo(name);
+  const cat = String(p.cat || '').trim();
+  if (isPokemonCardItem(name) || cat === '포켓몬카드') return 'pokemon';
+  if (cat === '아이스크림') return 'icecream';
+  if (cat === '과자') return 'snack';
+  if (cat === '음료') return 'drink';
+  if (FOOD_CATS_OUTSIDE_TRENDS.has(cat)) return '';
+  return 'stationery';
+}
+function categoryTrendMonths(){
+  return [...new Set(DAILY.map(d => d.d.slice(0,7)).filter(m => m >= CATEGORY_TREND_START))].sort();
+}
+function weekStartDate(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return localDateStr(d);
+}
+function categoryTrendPeriods(){
+  if (categoryTrendPeriod === 'month') {
+    return categoryTrendMonths().map(m => ({key:m, label:`${parseInt(m.slice(5),10)}월`, fullLabel:`${parseInt(m.slice(5),10)}월`}));
+  }
+  const starts = [...new Set(DAILY.map(d => d.d).filter(d => d.slice(0,7) >= CATEGORY_TREND_START).map(weekStartDate))].sort();
+  return starts.map(start => {
+    const d = new Date(start + 'T00:00:00');
+    const month = d.getMonth() + 1;
+    const first = new Date(d.getFullYear(), d.getMonth(), 1);
+    const firstMonday = new Date(first);
+    const firstDow = firstMonday.getDay();
+    firstMonday.setDate(1 + (firstDow === 0 ? 1 : firstDow === 1 ? 0 : 8 - firstDow));
+    const weekNo = d < firstMonday ? 1 : Math.floor((d - firstMonday) / (7 * 24 * 60 * 60 * 1000)) + 1;
+    return {key:start, label:`${month}/${d.getDate()}`, fullLabel:`${month}월 ${weekNo}주`};
+  });
+}
+function buildCategoryTrendData(){
+  const periods = categoryTrendPeriods();
+  const data = {};
+  CATEGORY_TRENDS.forEach(def => {
+    data[def.key] = {};
+    periods.forEach(p => data[def.key][p.key] = {sales:0, qty:0});
+  });
+  const rowsByDate = categoryTrendRowsByDate();
+  Object.entries(rowsByDate).forEach(([day, rows]) => {
+    if (day.slice(0,7) < CATEGORY_TREND_START) return;
+    const periodKey = categoryTrendPeriod === 'month' ? day.slice(0,7) : weekStartDate(day);
+    if (!data.stationery[periodKey]) return;
+    (rows || []).forEach(row => {
+      const key = categoryTrendKey(row.n);
+      if (!key || !data[key]) return;
+      data[key][periodKey].sales += Number(row.s || 0);
+      data[key][periodKey].qty += Number(row.q || 0);
+    });
+  });
+  return {periods, data};
+}
+function categoryTrendUnitValue(value){
+  return categoryTrendMetric === 'sales' ? fmtFull(value) : `${fmt(value)}개`;
+}
+function addDaysStr(dateStr, days){
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return localDateStr(d);
+}
+function monthEndDate(year, monthIndex){
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+function addMonthsSameDay(dateStr, monthsDelta){
+  const d = new Date(dateStr + 'T00:00:00');
+  const targetYear = d.getFullYear();
+  const targetMonth = d.getMonth() + monthsDelta;
+  const lastDay = monthEndDate(targetYear, targetMonth);
+  const out = new Date(targetYear, targetMonth, Math.min(d.getDate(), lastDay));
+  return localDateStr(out);
+}
+function daysBetween(start, end){
+  const s = new Date(start + 'T00:00:00');
+  const e = new Date(end + 'T00:00:00');
+  return Math.round((e - s) / (24 * 60 * 60 * 1000));
+}
+function sumCategoryTrendRange(categoryKey, startDate, endDate){
+  const rowsByDate = categoryTrendRowsByDate();
+  let total = 0;
+  Object.entries(rowsByDate).forEach(([day, rows]) => {
+    if (day < startDate || day > endDate) return;
+    (rows || []).forEach(row => {
+      if (categoryTrendKey(row.n) !== categoryKey) return;
+      total += Number(row[categoryTrendMetric === 'sales' ? 's' : 'q'] || 0);
+    });
+  });
+  return total;
+}
+function partialMonthComparison(def, periods){
+  if (categoryTrendPeriod !== 'month' || periods.length < 2) return null;
+  const latest = latestSalesDate();
+  if (!latest) return null;
+  const currentMonth = latest.slice(0,7);
+  const lastPeriod = periods[periods.length - 1];
+  if (lastPeriod.key !== currentMonth) return null;
+  const latestDay = parseInt(latest.slice(8,10), 10);
+  const currentLastDay = monthEndDate(Number(latest.slice(0,4)), Number(latest.slice(5,7)) - 1);
+  if (latestDay >= currentLastDay) return null;
+  const prevStart = addMonthsSameDay(`${currentMonth}-01`, -1);
+  const prevEnd = addMonthsSameDay(latest, -1);
+  return {
+    prev: sumCategoryTrendRange(def.key, prevStart, prevEnd),
+    label: '전월 같은 날짜까지 대비'
+  };
+}
+function partialWeekComparison(def, periods){
+  if (categoryTrendPeriod !== 'week' || periods.length < 2) return null;
+  const latest = latestSalesDate();
+  if (!latest) return null;
+  const currentStart = weekStartDate(latest);
+  const lastPeriod = periods[periods.length - 1];
+  if (lastPeriod.key !== currentStart) return null;
+  const elapsedDays = daysBetween(currentStart, latest);
+  if (elapsedDays >= 6) return null;
+  const prevStart = addDaysStr(currentStart, -7);
+  const prevEnd = addDaysStr(prevStart, elapsedDays);
+  return {
+    prev: sumCategoryTrendRange(def.key, prevStart, prevEnd),
+    label: '지난주 같은 요일 대비'
+  };
+}
+function categoryTrendSentence(def, values, periods){
+  const lastPeriod = periods[periods.length - 1];
+  const last = values[values.length - 1] || 0;
+  const partial = partialMonthComparison(def, periods) || partialWeekComparison(def, periods);
+  const prev = partial ? partial.prev : (values[values.length - 2] || 0);
+  if (!last && !prev) return `${def.label}: 아직 비교할 데이터가 적습니다.`;
+  if (!prev && last) return `${def.label}: ${lastPeriod.fullLabel} ${categoryTrendUnitValue(last)}로 새 흐름이 보입니다.`;
+  const diff = last - prev;
+  const pct = prev ? Math.round((diff / prev) * 100) : 0;
+  const compareLabel = partial ? partial.label : (categoryTrendPeriod === 'month' ? '전월 대비' : '전주 대비');
+  if (Math.abs(pct) < 8) return `${def.label}: ${compareLabel} 비슷한 수준입니다.`;
+  const direction = diff > 0 ? '늘었습니다' : '줄었습니다';
+  return `${def.label}: ${compareLabel} ${Math.abs(pct)}% ${direction}.`;
+}
+function renderCategoryTrend(){
+  const panel = document.getElementById('categoryTrendPanel');
+  if (!panel || panel.hidden) return;
+  const canvas = document.getElementById('categoryTrendCanvas');
+  const tooltip = document.getElementById('categoryTrendTooltip');
+  const summary = document.getElementById('categoryTrendSummary');
+  const legend = document.getElementById('categoryTrendLegend');
+  const note = document.getElementById('categoryTrendNote');
+  if (!canvas || !tooltip || !summary || !legend || !note) return;
+
+  const {periods, data} = buildCategoryTrendData();
+  const series = CATEGORY_TRENDS.map(def => ({
+    ...def,
+    values: periods.map(p => data[def.key][p.key][categoryTrendMetric])
+  }));
+  summary.innerHTML = series.map(s => `<div>${todayEscape(categoryTrendSentence(s, s.values, periods))}</div>`).join('');
+  legend.innerHTML = series.map(s =>
+    `<span class="trend-legend-item"><span class="trend-dot" style="background:${s.color}"></span>${s.label}</span>`
+  ).join('');
+  const latest = latestSalesDate();
+  const latestMonth = latest ? `${parseInt(latest.slice(5,7),10)}월은 ${parseInt(latest.slice(8,10),10)}일까지의 데이터입니다.` : '';
+  const storeLabel = categoryTrendStore === 's1' ? '1호점' : categoryTrendStore === 's2' ? '2호점' : '전체';
+  const metricLabel = categoryTrendMetric === 'sales' ? '매출액' : '판매수량';
+  const periodLabel = categoryTrendPeriod === 'month' ? '월별' : '월~일 주차별';
+  const partialNote = categoryTrendPeriod === 'week'
+    ? '진행 중인 주의 해석은 지난주 같은 요일 수와 비교합니다.'
+    : '진행 중인 달의 해석은 전월 같은 날짜까지와 비교합니다.';
+  note.textContent = `${storeLabel} · ${metricLabel} · ${periodLabel} 기준. ${latestMonth} ${partialNote}`.trim();
+
+  const wrap = canvas.parentElement;
+  const width = Math.max(300, wrap.clientWidth || 300);
+  const height = 240;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const pad = {left: 48, right: 14, top: 18, bottom: 32};
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+  const maxVal = Math.max(1, ...series.flatMap(s => s.values));
+  const xAt = i => pad.left + (periods.length === 1 ? plotW / 2 : (plotW * i) / (periods.length - 1));
+  const yAt = v => pad.top + plotH - (v / maxVal) * plotH;
+
+  ctx.strokeStyle = '#efe4d8';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#9a8c80';
+  ctx.font = '10px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'right';
+  [0, 0.5, 1].forEach(rate => {
+    const y = pad.top + plotH - plotH * rate;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(width - pad.right, y);
+    ctx.stroke();
+    const label = categoryTrendMetric === 'sales' ? Math.round(maxVal * rate / 10000) + '만' : fmt(Math.round(maxVal * rate));
+    ctx.fillText(label, pad.left - 6, y + 3);
+  });
+
+  ctx.textAlign = 'center';
+  periods.forEach((p, i) => {
+    if (categoryTrendPeriod === 'week' && periods.length > 8 && i % 2 === 1 && i !== periods.length - 1) return;
+    ctx.fillText(p.label, xAt(i), height - 10);
+  });
+
+  const chartPoints = [];
+  series.forEach(s => {
+    ctx.strokeStyle = s.color;
+    ctx.fillStyle = s.color;
+    ctx.lineWidth = s.key === 'stationery' ? 2.6 : 2.2;
+    ctx.beginPath();
+    s.values.forEach((v, i) => {
+      const x = xAt(i), y = yAt(v);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    s.values.forEach((v, i) => {
+      const x = xAt(i), y = yAt(v);
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      chartPoints.push({
+        x, y,
+        color: s.color,
+        label: s.label,
+        period: periods[i].fullLabel,
+        value: categoryTrendUnitValue(v)
+      });
+    });
+  });
+  function nearestTrendPoint(evt){
+    const rect = canvas.getBoundingClientRect();
+    const x = evt.clientX - rect.left;
+    const y = evt.clientY - rect.top;
+    let best = null;
+    let bestDist = Infinity;
+    chartPoints.forEach(p => {
+      const dist = Math.hypot(p.x - x, p.y - y);
+      if (dist < bestDist) {
+        best = p;
+        bestDist = dist;
+      }
+    });
+    return bestDist <= 14 ? best : null;
+  }
+  function showTrendTooltip(point){
+    if (!point) {
+      tooltip.hidden = true;
+      return;
+    }
+    tooltip.innerHTML = `<span style="color:${point.color}">●</span> ${todayEscape(point.label)}<br>${todayEscape(point.period)} · ${todayEscape(point.value)}`;
+    const left = Math.min(Math.max(point.x, 58), width - 58);
+    const top = Math.max(point.y - 8, 28);
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+    tooltip.hidden = false;
+  }
+  canvas.onmousemove = (evt) => showTrendTooltip(nearestTrendPoint(evt));
+  canvas.onclick = (evt) => showTrendTooltip(nearestTrendPoint(evt));
+  canvas.onmouseleave = () => { tooltip.hidden = true; };
 }
 function renderCalendar(){
   const ymStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
