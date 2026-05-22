@@ -793,6 +793,24 @@ body { color: #2f2a25; }
 .chat-msg.bot {
   color: #2f2a25;
 }
+.price-select-modal {
+  width: min(720px, calc(100vw - 32px));
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+}
+.price-select-summary { margin-top: 4px; color: #7c695b; font-size: 13px; line-height: 1.45; }
+.price-select-tools { display: flex; gap: 8px; margin: 12px 0 10px; }
+.price-select-tool { border: 1px solid #ead7c0; background: #fffaf2; color: #745845; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; padding: 8px 11px; }
+.price-select-list { border: 1px solid #ead7c0; border-radius: 8px; background: #fff; max-height: 52vh; overflow: auto; }
+.price-select-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-bottom: 1px solid #f2e5d4; cursor: pointer; }
+.price-select-row:last-child { border-bottom: 0; }
+.price-select-row:hover { background: #fffaf2; }
+.price-select-row input { width: 18px; height: 18px; accent-color: #4f3422; }
+.price-select-name { color: #2f2a25; font-size: 13px; font-weight: 650; line-height: 1.35; word-break: keep-all; }
+.price-select-meta { color: #9a8574; font-size: 12px; line-height: 1.35; margin-top: 3px; }
+.price-select-price { color: #4f3422; font-size: 13px; font-weight: 800; white-space: nowrap; }
+
 </style>
 </head>
 <body>
@@ -1054,6 +1072,24 @@ body { color: #2f2a25; }
   </div>
 </div>
 
+
+
+<!-- 가격표 상품 선택 팝업 -->
+<div class="settings-modal-bg" id="priceSelectBg" onclick="closePriceSelect(event)" style="display:none">
+  <div class="settings-modal price-select-modal" onclick="event.stopPropagation()">
+    <div class="settings-title">🏷️ 가격표 상품 선택</div>
+    <div class="price-select-summary" id="priceSelectSummary"></div>
+    <div class="price-select-tools">
+      <button type="button" class="price-select-tool" onclick="setPriceSelection(true)">전체 선택</button>
+      <button type="button" class="price-select-tool" onclick="setPriceSelection(false)">전체 해제</button>
+    </div>
+    <div class="price-select-list" id="priceSelectList"></div>
+    <div class="settings-actions" style="margin-top:14px;">
+      <button class="btn" onclick="confirmPriceSelection()">선택한 상품만 가격표 만들기</button>
+    </div>
+    <button class="modal-cancel" onclick="closePriceSelectForce()" style="margin-top:8px;width:100%;">닫기</button>
+  </div>
+</div>
 
 <script>
 /*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
@@ -2515,6 +2551,37 @@ function handleFile2(file) {
   checkReady2();
 }
 
+let pendingPriceProducts = [];
+let pendingPriceWithBarcode = true;
+
+function priceTagEscape(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function cleanPriceTagName(name) {
+  const companySuffixes = ['아이누리', '비앤씨', '파티클럽', '대원앤북', '아이비스', '신세계', '와로레저', '한들', '플라잉웨일즈', '엠티코리아', '토이7', '레드팬시', '세계유통'];
+  let cleaned = String(name || '')
+    .replace(/^\(\d[\d,]*\)\s*/, '')
+    .replace(/^\d+\s/, '')
+    .replace(/\s*\(타\)/g, '')
+    .replace(/\s*\(곽\)/g, '')
+    .replace(/\s*\(박스\)/g, '')
+    .replace(/\s*\(통\)/g, '')
+    .replace(/_\d{4}/g, '')
+    .replace(/\s+\d{4}/g, '');
+
+  companySuffixes.forEach(company => {
+    cleaned = cleaned.replace(new RegExp('\\s*\\(' + company + '\\)\\s*$', 'g'), '');
+  });
+
+  return cleaned.replace(/\s{2,}/g, ' ').trim();
+}
+
 function makePriceTags() {
   if (typeof XLSX === 'undefined') { alert('라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
   if (!selectedFile) return;
@@ -2531,7 +2598,6 @@ function makePriceTags() {
       const col = header.col;
       if (col.name < 0) { showError2('상품명 열을 찾을 수 없습니다.'); return; }
 
-      // 프로모션 열 감지
       let promoCol = -1;
       rows[header.rowIndex].forEach((h, i) => {
         if (String(h).trim() === '프로모션') promoCol = i;
@@ -2541,34 +2607,86 @@ function makePriceTags() {
       const products = [];
       for (let i = header.rowIndex + 1; i < rows.length; i++) {
         const row = rows[i];
-        const name = String(row[col.name] || '').trim();
+        const rawName = String(row[col.name] || '').trim();
+        const name = cleanPriceTagName(rawName);
         if (!name) continue;
 
         let price = null;
         if (col.price >= 0 && row[col.price] !== '' && row[col.price] !== null)
           price = parseInt(row[col.price]) || null;
         else
-          price = extractPrice(name);
+          price = extractPrice(rawName);
 
         const barcode = col.barcode >= 0 ? String(row[col.barcode] || '').trim() : '';
         const promoLabel = promoCol >= 0 ? String(row[promoCol] || '').trim() : '';
 
-        products.push({ name, price, barcode, promoLabel });
+        products.push({ name, originalName: rawName, price, barcode, promoLabel });
       }
 
       if (products.length === 0) { showError2('상품 데이터가 없습니다.'); return; }
-      openPrintWindow(products, withBarcode);
-
-      const el = document.getElementById('result2');
-      el.className = 'result success';
-      launchConfetti();
-      el.innerHTML = `<div class="count">✅ ${products.length}개 가격표 생성!</div><div style="margin-top:8px;font-size:12px;color:#166534;">새 창에서 인쇄(Ctrl+P)하세요.</div>`;
-      el.style.display = 'block';
-      document.getElementById('priceBtn').disabled = true;
-      document.getElementById('resetBtn').style.display = 'block';
+      openPriceSelection(products, withBarcode);
     } catch(err) { showError2('오류: ' + err.message); }
   };
   reader.readAsArrayBuffer(selectedFile);
+}
+
+function openPriceSelection(products, withBarcode) {
+  pendingPriceProducts = products;
+  pendingPriceWithBarcode = withBarcode;
+  renderPriceSelection();
+  document.getElementById('priceSelectBg').style.display = 'flex';
+}
+
+function renderPriceSelection() {
+  const summary = document.getElementById('priceSelectSummary');
+  const list = document.getElementById('priceSelectList');
+  summary.textContent = '거래명세표에서 ' + pendingPriceProducts.length + '개 상품을 찾았습니다. 신규상품만 체크해서 가격표를 만드세요.';
+  list.innerHTML = pendingPriceProducts.map((p, i) => {
+    const price = p.price ? p.price.toLocaleString('ko-KR') + '원' : '가격 없음';
+    const meta = [p.barcode ? '바코드 ' + p.barcode : '', p.promoLabel ? p.promoLabel : ''].filter(Boolean).join(' · ');
+    return '<label class="price-select-row">' +
+      '<input type="checkbox" class="price-select-check" data-index="' + i + '" checked>' +
+      '<div><div class="price-select-name">' + priceTagEscape(p.name) + '</div>' +
+      (meta ? '<div class="price-select-meta">' + priceTagEscape(meta) + '</div>' : '') +
+      '</div><div class="price-select-price">' + priceTagEscape(price) + '</div></label>';
+  }).join('');
+}
+
+function setPriceSelection(checked) {
+  document.querySelectorAll('.price-select-check').forEach(ch => { ch.checked = checked; });
+}
+
+function closePriceSelect(e) {
+  if (e && e.target.id !== 'priceSelectBg') return;
+  closePriceSelectForce();
+}
+
+function closePriceSelectForce() {
+  document.getElementById('priceSelectBg').style.display = 'none';
+}
+
+function confirmPriceSelection() {
+  const selected = [];
+  document.querySelectorAll('.price-select-check').forEach(ch => {
+    if (ch.checked) {
+      const item = pendingPriceProducts[Number(ch.dataset.index)];
+      if (item) selected.push(item);
+    }
+  });
+  if (selected.length === 0) { alert('가격표를 만들 상품을 선택해주세요.'); return; }
+  closePriceSelectForce();
+  finishSelectedPriceTags(selected, pendingPriceWithBarcode);
+}
+
+function finishSelectedPriceTags(products, withBarcode) {
+  openPrintWindow(products, withBarcode);
+  const el = document.getElementById('result2');
+  el.className = 'result success';
+  launchConfetti();
+  el.innerHTML = '<div class="count">✅ ' + products.length + '개 가격표 생성!</div><div style="margin-top:8px;font-size:12px;color:#166534;">새 창에서 인쇄(Ctrl+P)하세요.</div>';
+  el.style.display = 'block';
+  document.getElementById('priceBtn').disabled = true;
+  document.getElementById('resetBtn').style.display = 'block';
 }
 
 function sortProducts(products) {
@@ -2622,17 +2740,7 @@ function openPrintWindow(products, withBarcode) {
   const tagsHTML = (() => {
     const tags = sorted.map(p => {
     const priceStr = p.price ? p.price.toLocaleString('ko-KR') + '원' : '';
-    const nameCleaned = p.name
-      .replace(/^\(\d[\d,]*\)\s*/, '')
-      .replace(/^\d+\s/, '')
-      .replace(/\s*\(타\)/g, '')
-      .replace(/\s*\(곽\)/g, '')
-      .replace(/\s*\(박스\)/g, '')
-      .replace(/\s*\(통\)/g, '')
-      .replace(/_\d{4}/g, '')
-      .replace(/\s+\d{4}/g, '')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
+    const nameCleaned = cleanPriceTagName(p.name);
     const isPromo = p.promoLabel && p.promoLabel.trim() !== '';
     const bgImg = isPromo ? IMG_PROMO : IMG_NORMAL;
 
