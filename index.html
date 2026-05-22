@@ -2061,18 +2061,37 @@ function handleFile(file) {
 }
 
 // ── 헤더 자동 감지 ──
+function normalizeHeaderText(h) {
+  return String(h || '')
+    .replace(/\s+/g, '')
+    .replace(/[()[\]{}<>:：·ㆍ._-]/g, '')
+    .toLowerCase();
+}
+
 function detectColumns(headers) {
   const col = { barcode: -1, name: -1, qty: -1, cost: -1, price: -1 };
   headers.forEach((h, i) => {
     if (h === null || h === undefined || h === '') return;
     const s = String(h).trim();
-    if (col.barcode < 0 && /바코드|상품코드|^코드$/.test(s)) col.barcode = i;
-    if (col.name   < 0 && /^상품명$|^품명$/.test(s))          col.name   = i;
-    if (col.qty    < 0 && /^수량$/.test(s))                  col.qty    = i;
-    if (col.cost   < 0 && /^단가$/.test(s))                  col.cost   = i;
-    if (col.price  < 0 && /소비자가/.test(s))                 col.price  = i;
+    const n = normalizeHeaderText(s);
+    if (col.barcode < 0 && /바코드|상품바코드|상품코드|품번|코드번호|^코드$|jan|ean/.test(n)) col.barcode = i;
+    if (col.name < 0 && !/코드|번호|바코드/.test(n) && (/상품.*명|품.*명|품목.*명|제품.*명/.test(n) || n === '상품' || n === '품목')) col.name = i;
+    if (col.qty < 0 && /수량|입수|주문수량|매입수량|납품수량|입고수량/.test(n)) col.qty = i;
+    if (col.price < 0 && /소비자가|판매가|정가|소매가|매가/.test(n)) col.price = i;
+    if (col.cost < 0 && !/소비자|판매|정가|소매|매가/.test(n) && /단가|공급가|매입가|원가/.test(n)) col.cost = i;
   });
   return col;
+}
+
+function findHeaderRow(rows) {
+  const limit = Math.min(rows.length, 20);
+  for (let i = 0; i < limit; i++) {
+    const row = rows[i] || [];
+    const col = detectColumns(row);
+    const nonEmpty = row.filter(v => String(v || '').trim() !== '').length;
+    if (col.name >= 0 && nonEmpty > 0) return { rowIndex: i, col };
+  }
+  return { rowIndex: 0, col: detectColumns(rows[0] || []) };
 }
 
 // ── 소비자가 추출 (열이 없을 때 상품명에서 파싱) ──
@@ -2107,16 +2126,17 @@ function convert() {
       if (rows.length < 2) { showError('데이터가 없습니다.'); return; }
 
       // 헤더 자동 감지
-      const col = detectColumns(rows[0]);
+      const header = findHeaderRow(rows);
+      const col = header.col;
       if (col.name < 0) {
-        showError('상품명 열을 찾을 수 없습니다.<br>첫 번째 행에 "상품명" 헤더가 있는지 확인해주세요.');
+        showError('상품명 열을 찾을 수 없습니다.<br>첫 20줄 안에 상품명/품명/품목명/제품명 헤더가 있는지 확인해주세요.');
         return;
       }
 
       const products = [];
       const noPrice  = [];
 
-      for (let i = 1; i < rows.length; i++) {
+      for (let i = header.rowIndex + 1; i < rows.length; i++) {
         const row     = rows[i];
         const barcode = col.barcode >= 0 ? String(row[col.barcode] || '').trim() : '';
         const name    = String(row[col.name] || '').trim();
@@ -2142,7 +2162,7 @@ function convert() {
 
       const result = await downloadExcel(products);
       if (!result) return;
-      showResult(products.length, noPrice, result.filename, result.usedPicker, col, rows[0]);
+      showResult(products.length, noPrice, result.filename, result.usedPicker, col, rows[header.rowIndex]);
       showPreview(products);
 
     } catch(err) { showError('파일 읽기 오류: ' + err.message); }
@@ -2404,13 +2424,14 @@ function allInOne() {
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
       if (rows.length < 2) { showError('데이터가 없습니다.'); return; }
 
-      const col = detectColumns(rows[0]);
+      const header = findHeaderRow(rows);
+      const col = header.col;
       if (col.name < 0) { showError('상품명 열을 찾을 수 없습니다.'); return; }
 
       // ── 키오스크 변환용 상품 목록 ──
       const kProducts = [];
       const noPrice   = [];
-      for (let i = 1; i < rows.length; i++) {
+      for (let i = header.rowIndex + 1; i < rows.length; i++) {
         const row     = rows[i];
         const barcode = col.barcode >= 0 ? String(row[col.barcode] || '').trim() : '';
         const name    = String(row[col.name] || '').trim();
@@ -2433,9 +2454,9 @@ function allInOne() {
 
       // ── 가격표 생성 ──
       let promoCol = -1;
-      rows[0].forEach((h, i) => { if (String(h).trim() === '프로모션') promoCol = i; });
+      rows[header.rowIndex].forEach((h, i) => { if (String(h).trim() === '프로모션') promoCol = i; });
       const pProducts = [];
-      for (let i = 1; i < rows.length; i++) {
+      for (let i = header.rowIndex + 1; i < rows.length; i++) {
         const row  = rows[i];
         const name = String(row[col.name] || '').trim();
         if (!name) continue;
@@ -2453,7 +2474,7 @@ function allInOne() {
 
       // ── 결과 표시 ──
       launchConfetti();
-      showResult(kProducts.length, noPrice, result.filename, result.usedPicker, col, rows[0]);
+      showResult(kProducts.length, noPrice, result.filename, result.usedPicker, col, rows[header.rowIndex]);
       showPreview(kProducts);
       document.getElementById('convertBtn').disabled = true;
       document.getElementById('allInOneBtn').disabled = true;
@@ -2506,18 +2527,19 @@ function makePriceTags() {
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
       if (rows.length < 2) { showError2('데이터가 없습니다.'); return; }
 
-      const col = detectColumns(rows[0]);
+      const header = findHeaderRow(rows);
+      const col = header.col;
       if (col.name < 0) { showError2('상품명 열을 찾을 수 없습니다.'); return; }
 
       // 프로모션 열 감지
       let promoCol = -1;
-      rows[0].forEach((h, i) => {
+      rows[header.rowIndex].forEach((h, i) => {
         if (String(h).trim() === '프로모션') promoCol = i;
       });
 
       const withBarcode = document.getElementById('barcodeToggle').checked;
       const products = [];
-      for (let i = 1; i < rows.length; i++) {
+      for (let i = header.rowIndex + 1; i < rows.length; i++) {
         const row = rows[i];
         const name = String(row[col.name] || '').trim();
         if (!name) continue;
