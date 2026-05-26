@@ -837,6 +837,248 @@ body { color: #2f2a25; }
 .price-select-meta { color: #9a8574; font-size: 12px; line-height: 1.35; margin-top: 3px; }
 .price-select-price { color: #4f3422; font-size: 13px; font-weight: 800; white-space: nowrap; }
 
+/* ── 전체 디자인 통일 2차 ── */
+:root {
+  --pg-bg: #fffaf0;
+  --pg-surface: #fffdf9;
+  --pg-soft: #fff8ed;
+  --pg-chip: #fffaf2;
+  --pg-border: #ead7c0;
+  --pg-border-strong: #f1dac0;
+  --pg-text: #2f2a25;
+  --pg-title: #4b3528;
+  --pg-muted: #8c7b6e;
+  --pg-subtle: #a58b79;
+  --pg-primary: #4f3422;
+  --pg-primary-hover: #3f2a1c;
+  --pg-accent: #e96f52;
+  --pg-ok: #2f9c65;
+  --pg-warn: #b86f20;
+  --pg-danger: #d86448;
+  --pg-blue: #3f7fba;
+  --pg-card-shadow: 0 3px 0 rgba(236,196,129,.18), 0 8px 18px rgba(116,81,45,.045);
+}
+body,
+#appBody,
+.today-section,
+.sales-section,
+.chat-wrap,
+.ask-panel,
+.ro-header { background: var(--pg-bg); color: var(--pg-text); }
+.app-header,
+.tab-bar { background: #fffdf7; }
+.store-card,
+.cal-section,
+.trend-card,
+.today-card,
+.update-needed,
+.stock-section,
+.excel-tool-card,
+.excel-section .rules-details,
+.chat-empty,
+.chat-msg.bot,
+.ask-input-row,
+.settings-modal,
+.price-select-modal {
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border-strong);
+  border-radius: 12px;
+  box-shadow: var(--pg-card-shadow);
+}
+.stock-section,
+.excel-tool-card,
+.chat-empty,
+.chat-msg.bot,
+.ask-input-row { border-color: #f3dfc7; }
+.sum-card,
+.item-card,
+.stock-store-card,
+.stock-paper-card,
+.price-select-list {
+  background: var(--pg-surface);
+  border: 1px solid #f3e1cd;
+  border-radius: 12px;
+  box-shadow: none;
+}
+.store-name,
+.cal-month,
+.trend-toggle,
+.today-card-title,
+.stock-toggle-title,
+.excel-card-title,
+.chat-empty-title,
+.ask-result-title,
+.settings-title,
+.price-select-name {
+  color: var(--pg-title);
+  font-weight: 650;
+}
+.total-card,
+.today-date,
+.priority-title .sub,
+.ask-title {
+  color: #8a654f;
+  font-weight: 500;
+}
+.store-stat .lbl,
+.cal-total-label,
+.trend-control-label,
+.stock-control-label,
+.stock-toggle-sub,
+.stock-row-meta,
+.stock-paper-meta,
+.excel-card-note,
+.excel-status-note,
+.today-title-hint,
+.today-criteria-row,
+.settings-hint,
+.price-select-summary,
+.price-select-meta {
+  color: var(--pg-muted);
+  font-weight: 450;
+}
+.store-stat .val,
+.cal-total-val,
+.stock-row-value,
+.today-metric-row .v,
+.chat-msg.bot td:last-child,
+.price-select-price {
+  color: var(--pg-text);
+  font-weight: 600;
+}
+.btn,
+.pw-btn,
+.modal-save,
+.ask-input-row button,
+.tab-btn.active,
+.csf-btn.active,
+.trend-btn.active,
+.tab.active,
+.filter-btn.active,
+.stock-view-btn.active,
+.stock-filter-btn.active {
+  background: var(--pg-primary) !important;
+  border-color: var(--pg-primary) !important;
+  color: #fff !important;
+  font-weight: 550;
+  box-shadow: none;
+}
+.btn:hover,
+.pw-btn:hover,
+.ask-input-row button:hover { background: var(--pg-primary-hover) !important; }
+.btn:disabled {
+  background: #d8c7b7 !important;
+  color: #fffaf2 !important;
+}
+.btn-reset,
+.modal-cancel,
+.cal-nav-btn,
+.csf-btn,
+.trend-btn,
+.tab,
+.filter-btn,
+.tab-btn,
+.chat-suggest-card,
+.chat-choice-btn,
+.stock-view-btn,
+.stock-filter-btn,
+.stock-more-btn,
+.price-select-tool {
+  background: var(--pg-chip) !important;
+  border: 1px solid var(--pg-border) !important;
+  color: #745845 !important;
+  border-radius: 999px;
+  font-weight: 500;
+  box-shadow: none;
+}
+.cal-nav-btn { border-radius: 50%; }
+.chat-suggest-card:hover,
+.tab-btn:not(.active):hover,
+.price-select-tool:hover,
+.stock-more-btn:hover { background: #fff2de !important; }
+.settings-input,
+.pw-input,
+.search-box {
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
+  color: var(--pg-text);
+  border-radius: 12px;
+  box-shadow: none;
+}
+.settings-input:focus,
+.pw-input:focus,
+.search-box:focus {
+  border-color: #d7b999;
+  box-shadow: 0 0 0 3px rgba(236,196,129,.18);
+}
+.cal-cell.has-sales { background: #f7f2e9; }
+.cal-cell.has-sales.high { background: #f3e8d7; }
+.cal-cell.has-sales.very-high { background: #edd9bd; }
+.cal-cell.today { background: #fff2de !important; }
+.cal-cell.sun .cal-day,
+.store-stat .val.highlight,
+.sum-card.urgent .num { color: var(--pg-danger); }
+.cal-cell.sat .cal-day,
+.sum-card.pending .num { color: var(--pg-blue); }
+.sum-card.done .num,
+.today-list-row .value,
+.today-criteria-row .state { color: var(--pg-ok); }
+.status-btn,
+.stock-status-btn,
+.tag,
+.stock-reason-pill,
+.ask-tag,
+.excel-step-num {
+  border-radius: 999px;
+  font-weight: 500;
+}
+.status-btn.s0,
+.stock-status-btn.s0,
+.tag.days-urgent,
+.today-alert { background: #fff1ec; color: var(--pg-danger); }
+.status-btn.s1 { background: #edf4fb; color: var(--pg-blue); }
+.status-btn.s2,
+.stock-status-btn.s1,
+.tag.days-ok,
+.today-ok { background: #edf8f0; color: var(--pg-ok); }
+.status-btn.s3,
+.stock-status-btn.s2,
+.tag,
+.tag.days-warn { background: #f4f1ed; color: #7c695b; }
+.status-btn.s4 { background: #f7f0fb; color: #9a6abd; }
+.status-btn.s5,
+.tag.price,
+.stock-reason-pill,
+.excel-step-num { background: #fff3e2; color: #8a654f; }
+.tag.rank { background: var(--pg-primary); color: #fff; }
+.detail-cell,
+.order-info,
+.stock-store-head,
+.ask-interpret,
+.excel-status-note {
+  background: var(--pg-soft);
+  border-color: var(--pg-border);
+}
+.today-main-value { font-weight: 650; }
+.today-list-row .rank,
+.today-list-row .name,
+.today-list-row .value { font-weight: 600; }
+.today-alert,
+.today-ok,
+.update-needed { font-weight: 500; }
+.dropzone,
+.excel-section .dropzone {
+  background: var(--pg-chip) !important;
+  border-color: var(--pg-border) !important;
+  box-shadow: none !important;
+}
+.excel-section .dropzone:hover,
+.excel-section .dropzone.dragover,
+.excel-section .file-selected {
+  background: var(--pg-soft) !important;
+  border-color: #d7b999 !important;
+}
+
 </style>
 </head>
 <body>
@@ -1089,7 +1331,7 @@ body { color: #2f2a25; }
     <div class="settings-hint">저장 파일명에 사용됩니다 · 예: <b>태승_20260415_상품등록.xlsx</b></div>
     <div class="settings-actions">
       <button class="btn" onclick="doConvert()">변환하기</button>
-      <button class="btn" style="background:linear-gradient(135deg,#004638,#2d8c70)" onclick="doAllInOne()">✨ 한번에 다 하기</button>
+      <button class="btn" style="background:#4f3422" onclick="doAllInOne()">✨ 한번에 다 하기</button>
     </div>
     <button class="modal-cancel" onclick="closeConvertSettingsForce()" style="margin-top:8px;width:100%;">닫기</button>
   </div>
@@ -1103,7 +1345,7 @@ body { color: #2f2a25; }
       <span class="settings-label">바코드 포함</span>
       <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
         <input type="checkbox" id="barcodeToggle" style="opacity:0;width:0;height:0;" onchange="updateToggleStyle()" checked>
-        <span id="toggleSlider" style="position:absolute;inset:0;background:#004638;border-radius:24px;transition:0.2s;"></span>
+        <span id="toggleSlider" style="position:absolute;inset:0;background:#4f3422;border-radius:24px;transition:0.2s;"></span>
         <span id="toggleKnob" style="position:absolute;left:23px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:0.2s;"></span>
       </label>
       <span id="toggleLabel" style="font-size:12px;color:var(--subtext);">포함</span>
@@ -1819,7 +2061,7 @@ function showDayDetail(ds){
           const price = it.s ? fmtFull(it.s) : '';
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f1f5f9;">'
             + '<span style="font-size:12px;color:#1e293b;flex:1;margin-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + it.n + '</span>'
-            + '<span style="font-size:13px;font-weight:700;color:#004638;flex-shrink:0;">' + (it.q||0) + '개</span>'
+            + '<span style="font-size:13px;font-weight:600;color:#4f3422;flex-shrink:0;">' + (it.q||0) + '개</span>'
             + '</div>';
         }).join('')
       + '</div></div>';
@@ -1836,12 +2078,12 @@ function showDayDetail(ds){
     + '</div>'
     + '<div style="display:flex;flex-direction:column;gap:8px;">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f0fdf4;border-radius:10px;">'
-    + '<span style="font-size:13px;font-weight:600;color:#2d8c70;">🏪 1호점</span>'
+    + '<span style="font-size:13px;font-weight:600;color:#745845;">🏪 1호점</span>'
     + '<span style="font-size:14px;font-weight:700;color:#1e293b;">' + (s1>0?fmtFull(s1):'기록 없음') + '</span></div>'
     + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#eff6ff;border-radius:10px;">'
     + '<span style="font-size:13px;font-weight:600;color:#4a90d9;">🏪 2호점</span>'
     + '<span style="font-size:14px;font-weight:700;color:#1e293b;">' + (s2>0?fmtFull(s2):'기록 없음') + '</span></div>'
-    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:linear-gradient(135deg,#004638,#2d8c70);border-radius:10px;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#4f3422;border-radius:10px;">'
     + '<span style="font-size:13px;font-weight:600;color:#fff;">💰 합산</span>'
     + '<span style="font-size:16px;font-weight:800;color:#fff;">' + fmtFull(total) + '</span></div>'
     + '</div>'
@@ -2550,7 +2792,7 @@ function toggleDark() {
 
 // ── 컨페티 ──
 function launchConfetti() {
-  const colors = ['#004638','#C7DDDC','#a8c5c0','#f97316','#fbbf24','#34d399'];
+  const colors = ['#4f3422','#ead7c0','#e96f52','#fff2de','#f6c66e','#2f9c65'];
   const container = document.body;
   for (let i = 0; i < 80; i++) {
     const el = document.createElement('div');
@@ -2658,7 +2900,7 @@ function checkReady2() {
 
 function updateToggleStyle() {
   const checked = document.getElementById('barcodeToggle').checked;
-  document.getElementById('toggleSlider').style.background = checked ? '#004638' : '#cbd5e1';
+  document.getElementById('toggleSlider').style.background = checked ? '#4f3422' : '#d8c7b7';
   document.getElementById('toggleKnob').style.left = checked ? '23px' : '3px';
   document.getElementById('toggleLabel').textContent = checked ? '포함' : '불포함';
 }
