@@ -226,6 +226,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .stock-status-btn.s0 { background: #fff1ec; color: #d86448; }
 .stock-status-btn.s1 { background: #edf8f0; color: #2f9c65; }
 .stock-status-btn.s2 { background: #f4f1ed; color: #7c695b; }
+.stock-more-btn { width: 100%; margin-top: 8px; border: 1px solid #ead7c0; background: #fffaf2; color: #745845;
+                  border-radius: 999px; padding: 8px 10px; font-size: 12px; font-weight: 550; cursor: pointer; }
+.stock-paper-filter { display:flex; gap:6px; margin-bottom:9px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.stock-paper-filter::-webkit-scrollbar { display:none; }
+.stock-filter-btn { flex:0 0 auto; border:1px solid #ead7c0; background:#fffaf2; color:#745845; border-radius:999px;
+                    padding:7px 10px; font-size:11px; font-weight:500; cursor:pointer; }
+.stock-filter-btn.active { background:#4f3422; border-color:#4f3422; color:#fff; }
 .stock-mini-tooltip { position: fixed; transform: translate(-50%, -112%); min-width: 112px; max-width: 180px;
                       padding: 7px 9px; border-radius: 10px; background: rgba(49,36,29,.94); color: #fff;
                       font-size: 11px; font-weight: 650; line-height: 1.35; text-align: center; pointer-events: none;
@@ -547,6 +554,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 }
 .excel-card-title { color:#4b3528; font-size:13px; font-weight:650; margin-bottom:8px; }
 .excel-card-note { color:#9a8c80; font-size:11px; font-weight:450; line-height:1.45; margin-top:-2px; margin-bottom:10px; }
+.excel-step-list { display:grid; gap:7px; }
+.excel-step { display:grid; grid-template-columns:auto 1fr; gap:8px; align-items:start; color:#6d5849; font-size:12px; font-weight:450; line-height:1.45; }
+.excel-step b { color:#4b3528; font-weight:650; }
+.excel-step-num { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:999px; background:#fff2de; color:#8a654f; font-size:11px; font-weight:650; }
+.excel-status-note { margin-top:10px; padding:9px 10px; border-radius:10px; background:#fff8ed; color:#8a654f; font-size:11px; font-weight:500; line-height:1.45; }
 .excel-section .dropzone {
   background: #fffaf2 !important;
   border: 1.5px dashed #ead7c0 !important;
@@ -993,6 +1005,7 @@ body { color: #2f2a25; }
         <div class="drop-hint">.xlsx / .xls 파일 지원</div>
         <div class="file-name" id="fileName" style="display:none"></div>
       </div>
+      <div class="excel-status-note" id="excelFileStatus">아직 선택된 파일이 없습니다.</div>
     </div>
 
     <div class="excel-tool-card">
@@ -1003,6 +1016,16 @@ body { color: #2f2a25; }
       <button class="btn" id="priceBtn" disabled onclick="openPriceSettings()">🏷️ 가격표 제작</button>
       <button class="btn btn-wide" id="allInOneBtn" disabled onclick="openConvertSettings()" style="background:#3f6f5f !important;">✨ 한 번에 다 하기</button>
       </div>
+    </div>
+
+    <div class="excel-tool-card">
+      <div class="excel-card-title">작업 순서</div>
+      <div class="excel-step-list">
+        <div class="excel-step"><span class="excel-step-num">1</span><div><b>파일 선택</b><br>거래명세서 엑셀을 먼저 넣습니다.</div></div>
+        <div class="excel-step"><span class="excel-step-num">2</span><div><b>작업 선택</b><br>상품 등록용 엑셀, 가격표, 한 번에 다 하기 중 고릅니다.</div></div>
+        <div class="excel-step"><span class="excel-step-num">3</span><div><b>결과 확인</b><br>감지된 열과 미감지 항목을 확인한 뒤 사용합니다.</div></div>
+      </div>
+      <div class="excel-status-note">이미지 거래명세서는 이 화면에서 바로 읽지는 못해요. 사진 파일은 코덱스에게 전달하면 엑셀로 정리하는 방식으로 진행하면 됩니다.</div>
     </div>
 
     <!-- 결과 -->
@@ -1049,7 +1072,7 @@ body { color: #2f2a25; }
         <div class="chat-suggest-card" data-q="토미카 판매 순위">토미카 순위</div>
         <div class="chat-suggest-card" data-q="이번 달 포켓몬카드 판매 수량">포켓몬카드 수량</div>
         <div class="chat-suggest-card" data-q="고단가 판매 상품">고단가 상품</div>
-        <div class="chat-suggest-card" data-q="지난주 아이스크림 베스트 10">카테고리 베스트</div>
+        <div class="chat-suggest-card" data-q="문구 판매 추이">카테고리 추이</div>
       </div>
     </div>
     <div class="chat-msgs" id="chatMsgs"></div>
@@ -1838,6 +1861,8 @@ const STORAGE_KEY = 'playground_stock_check_v1';
 let roState = {};
 let stockOpenState = {};
 let stockStoreView = { stockIcecream: 'all', stockSnack: 'all' };
+let stockWeeklyExpanded = {};
+let stockPaperFilter = { stockPaperStopped: 'active', stockPaperHigh: 'active' };
 const STOCK_STATUS_LABELS = ['미확인', '발주완', '제외'];
 const STOCK_STATUS_CLASSES = ['s0', 's1', 's2'];
 
@@ -1883,6 +1908,17 @@ function setStockStoreView(sectionId, store, btn){
   if (btn) btn.classList.add('active');
   renderList();
 }
+function toggleStockShowAll(sectionId){
+  stockWeeklyExpanded[sectionId] = !stockWeeklyExpanded[sectionId];
+  renderList();
+}
+function setStockPaperFilter(sectionId, filter, btn){
+  stockPaperFilter[sectionId] = filter;
+  const section = document.getElementById(sectionId);
+  if (section) section.querySelectorAll('.stock-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderList();
+}
 function renderStoreList(items){
   if (!items || !items.length) return '<div class="stock-row"><div class="stock-row-name">판매 기록이 없어요</div><div class="stock-row-value">-</div></div>';
   return items.map((item, idx) => `
@@ -1917,8 +1953,14 @@ function stockWeeklySection(id, title, sub, data){
   const open = !!stockOpenState[id];
   const store = stockStoreView[id] || 'all';
   const limit = id === 'stockIcecream' ? 50 : 30;
-  const rows = weeklyRowsForView(data || {s1:[], s2:[]}, store, limit);
+  const allRows = weeklyRowsForView(data || {s1:[], s2:[]}, store, limit);
+  const previewLimit = 15;
+  const expanded = !!stockWeeklyExpanded[id];
+  const rows = expanded ? allRows : allRows.slice(0, previewLimit);
   const storeLabel = store === 's1' ? '1호점 철산' : store === 's2' ? '2호점 푸르지오' : '전체 지점';
+  const more = allRows.length > previewLimit
+    ? `<button class="stock-more-btn" onclick="event.stopPropagation();toggleStockShowAll('${id}')">${expanded ? '상위 15개만 보기' : '전체 ' + allRows.length + '개 보기'}</button>`
+    : '';
   return `<section class="stock-section ${open ? 'open' : ''}" id="${id}">
     <button class="stock-toggle" onclick="toggleStockSection('${id}')">
       <div>
@@ -1941,6 +1983,7 @@ function stockWeeklySection(id, title, sub, data){
         <div class="stock-store-card">
           <div class="stock-store-head">${storeLabel} · 많이 팔린 순</div>
           ${renderStoreList(rows)}
+          ${more}
         </div>
       </div>
     </div>
@@ -1976,7 +2019,24 @@ function renderHighPriceList(items){
     </div>`;
   }).join('');
 }
-function stockPaperSection(id, title, sub, bodyHtml, note){
+function filterPaperItems(sectionId, items, idFn){
+  const filter = stockPaperFilter[sectionId] || 'active';
+  if (filter === 'all') return items;
+  return items.filter(item => {
+    const status = getItemState(idFn(item)).status || 0;
+    return filter === 'excluded' ? status === 2 : status !== 2;
+  });
+}
+function stockPaperFilterHtml(id, counts){
+  const active = stockPaperFilter[id] || 'active';
+  const btn = (key, label) => `<button class="stock-filter-btn ${active === key ? 'active' : ''}" onclick="event.stopPropagation();setStockPaperFilter('${id}','${key}',this)">${label}</button>`;
+  return `<div class="stock-paper-filter">
+    ${btn('active', '확인대상 ' + counts.active)}
+    ${btn('excluded', '제외 ' + counts.excluded)}
+    ${btn('all', '전체 ' + counts.all)}
+  </div>`;
+}
+function stockPaperSection(id, title, sub, bodyHtml, note, filterHtml){
   const open = !!stockOpenState[id];
   return `<section class="stock-section ${open ? 'open' : ''}" id="${id}">
     <button class="stock-toggle" onclick="toggleStockSection('${id}')">
@@ -1986,6 +2046,7 @@ function stockPaperSection(id, title, sub, bodyHtml, note){
       </div>
     </button>
     <div class="stock-body">
+      ${filterHtml || ''}
       <div class="stock-paper-list">${bodyHtml}</div>
       ${note ? `<div class="stock-mini-note">${note}</div>` : ''}
     </div>
@@ -1995,12 +2056,26 @@ function renderList(){
   const wrap = document.getElementById('stockCheck');
   if (!wrap) return;
   const week = formatWeekRange();
-  const stopped = stationeryStoppedItems();
-  const high = (STOCK_CHECK_DATA && STOCK_CHECK_DATA.highPrice) || [];
+  const stoppedAll = stationeryStoppedItems();
+  const highAll = (STOCK_CHECK_DATA && STOCK_CHECK_DATA.highPrice) || [];
+  const stoppedId = item => 'stopped:' + item.barcode;
+  const highId = item => 'high:' + (item.barcode || item.name);
+  const stoppedCounts = {
+    all: stoppedAll.length,
+    excluded: stoppedAll.filter(item => (getItemState(stoppedId(item)).status || 0) === 2).length
+  };
+  stoppedCounts.active = stoppedCounts.all - stoppedCounts.excluded;
+  const highCounts = {
+    all: highAll.length,
+    excluded: highAll.filter(item => (getItemState(highId(item)).status || 0) === 2).length
+  };
+  highCounts.active = highCounts.all - highCounts.excluded;
+  const stopped = filterPaperItems('stockPaperStopped', stoppedAll, stoppedId);
+  const high = filterPaperItems('stockPaperHigh', highAll, highId);
   wrap.innerHTML =
     stockWeeklySection('stockIcecream', '아이스크림', week + ' · 지점별 상위 50개', (STOCK_CHECK_DATA && STOCK_CHECK_DATA.icecream) || {s1:[], s2:[]}) +
-    stockPaperSection('stockPaperStopped', '문구 · 판매 끊긴 상품', STOP_CANDIDATES.prevMonth + ' 3개 이상 판매 · ' + STOP_CANDIDATES.currentMonth + ' 0개', renderStoppedPaperList(stopped), '발주누락, 품절, 진열 빠짐을 의심해볼 상품입니다. 포켓몬카드는 제외했어요.') +
-    stockPaperSection('stockPaperHigh', '문구 · 고단가 확인', '최근 14일 판매된 10,000원 이상 상품', renderHighPriceList(high), '소비자가 10,000원 이상, 포켓몬카드 제외 기준입니다.') +
+    stockPaperSection('stockPaperStopped', '문구 · 판매 끊긴 상품', STOP_CANDIDATES.prevMonth + ' 3개 이상 판매 · ' + STOP_CANDIDATES.currentMonth + ' 0개', renderStoppedPaperList(stopped), '발주누락, 품절, 진열 빠짐을 의심해볼 상품입니다. 포켓몬카드는 제외했어요.', stockPaperFilterHtml('stockPaperStopped', stoppedCounts)) +
+    stockPaperSection('stockPaperHigh', '문구 · 고단가 확인', '최근 14일 판매된 10,000원 이상 상품', renderHighPriceList(high), '소비자가 10,000원 이상, 포켓몬카드 제외 기준입니다.', stockPaperFilterHtml('stockPaperHigh', highCounts)) +
     stockWeeklySection('stockSnack', '과자', week + ' · 지점별 상위 30개', (STOCK_CHECK_DATA && STOCK_CHECK_DATA.snack) || {s1:[], s2:[]});
   bindStockTooltips();
 }
@@ -2110,7 +2185,9 @@ function handleFile(file) {
   document.getElementById('fileName').textContent = '📂 ' + file.name;
   document.getElementById('fileName').style.display = 'block';
   dropzone.querySelector('.drop-title').textContent = '파일이 선택되었습니다';
-  dropzone.querySelector('.drop-icon').textContent = '';
+  dropzone.querySelector('.drop-icon').textContent = '✅';
+  const note = document.getElementById('excelFileStatus');
+  if (note) note.textContent = '선택한 파일: ' + file.name + ' · 이제 작업을 선택해주세요.';
   document.getElementById('result').style.display = 'none';
   document.getElementById('previewWrap').style.display = 'none';
   document.getElementById('resetBtn').style.display = 'none';
@@ -2148,7 +2225,40 @@ function findHeaderRow(rows) {
     const nonEmpty = row.filter(v => String(v || '').trim() !== '').length;
     if (col.name >= 0 && nonEmpty > 0) return { rowIndex: i, col };
   }
-  return { rowIndex: 0, col: detectColumns(rows[0] || []) };
+  return guessHeaderlessColumns(rows);
+}
+
+function guessHeaderlessColumns(rows) {
+  const sample = rows.slice(0, Math.min(rows.length, 30));
+  const width = Math.max(0, ...sample.map(r => (r || []).length));
+  const col = { barcode: -1, name: -1, qty: -1, cost: -1, price: -1 };
+  let bestName = { idx: -1, score: 0 };
+  let bestBarcode = { idx: -1, score: 0 };
+  const numericCols = [];
+  for (let c = 0; c < width; c++) {
+    let textScore = 0, barcodeScore = 0, numericScore = 0;
+    for (const row of sample) {
+      const raw = String((row || [])[c] || '').trim();
+      if (!raw) continue;
+      const digits = raw.replace(/[^\d]/g, '');
+      const num = Number(raw.replace(/,/g, ''));
+      if (/^\d{8,14}$/.test(digits)) barcodeScore += 4;
+      if (Number.isFinite(num) && raw.length <= 10) numericScore += 1;
+      if (/[가-힣A-Za-z]/.test(raw) && raw.length >= 3 && !/합계|소계|금액|수량|단가|바코드|상품명|품명/.test(raw)) {
+        textScore += Math.min(8, raw.length / 4);
+      }
+    }
+    if (textScore > bestName.score) bestName = { idx: c, score: textScore };
+    if (barcodeScore > bestBarcode.score) bestBarcode = { idx: c, score: barcodeScore };
+    numericCols.push({ idx: c, score: numericScore });
+  }
+  if (bestName.score >= 3) col.name = bestName.idx;
+  if (bestBarcode.score >= 4 && bestBarcode.idx !== col.name) col.barcode = bestBarcode.idx;
+  numericCols.sort((a,b) => b.score - a.score);
+  const nums = numericCols.filter(x => x.score >= 3 && x.idx !== col.name && x.idx !== col.barcode).map(x => x.idx);
+  if (nums.length) col.price = nums[nums.length - 1];
+  if (nums.length > 1) col.qty = nums[0];
+  return { rowIndex: -1, col };
 }
 
 // ── 소비자가 추출 (열이 없을 때 상품명에서 파싱) ──
@@ -2219,7 +2329,7 @@ function convert() {
 
       const result = await downloadExcel(products);
       if (!result) return;
-      showResult(products.length, noPrice, result.filename, result.usedPicker, col, rows[header.rowIndex]);
+      showResult(products.length, noPrice, result.filename, result.usedPicker, col, rows[header.rowIndex] || []);
       showPreview(products);
 
     } catch(err) { showError('파일 읽기 오류: ' + err.message); }
@@ -2620,7 +2730,7 @@ function makePriceTags() {
       if (col.name < 0) { showError2('상품명 열을 찾을 수 없습니다.'); return; }
 
       let promoCol = -1;
-      rows[header.rowIndex].forEach((h, i) => {
+      (rows[header.rowIndex] || []).forEach((h, i) => {
         if (String(h).trim() === '프로모션') promoCol = i;
       });
 
@@ -3329,7 +3439,7 @@ function metricLabel(metric){
 function stripQuestionWords(q){
   return q
     .replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|\d+\s*월/gi, ' ')
-    .replace(/판매\s*금액|판매금액|판매\s*수량|판매수량|매출|금액|수량|판매량|몇\s*개|얼마|얼마나|팔렸어|팔림|팔렸|팔린|판매|개수/gi, ' ')
+    .replace(/판매\s*금액|판매금액|판매\s*수량|판매수량|매출|금액|수량|판매량|몇\s*개|얼마|얼마나|팔렸어|팔림|팔렸|팔린|판매|개수|추이|흐름|증가|감소|늘었|줄었|늘|줄/gi, ' ')
     .replace(/1호점|2호점|일호점|이호점|철산|푸르지오|양\s*매장|전체|합계|두\s*매장|전\s*매장/gi, ' ')
     .replace(/[?？!！]/g, ' ')
     .trim();
@@ -3480,7 +3590,7 @@ function stoppedCategoryFromQuestion(q){
 
 function stoppedMinQtyFromQuestion(q){
   const m = q.match(/(\d+)\s*개\s*이상/);
-  return m ? parseInt(m[1]) : 2;
+  return m ? parseInt(m[1]) : 3;
 }
 
 function isStoppedSalesQuestion(q){
@@ -3561,6 +3671,54 @@ function handleHighPriceSold(q){
     html += '<tr><td>' + (i+1) + '. ' + escapeHtml(item.name) + '<br><span style="font-size:12px;color:#888;">마지막 판매 ' + escapeHtml(item.lastSale) + '</span></td><td>' + (item.q14||0) + '개<br>' + KRWfmt(item.s14||0) + '원</td></tr>';
   }
   html += '</table>';
+  return { html: html };
+}
+
+function handleCategoryTrendQuestion(q){
+  if (!/추이|흐름|늘|줄|증가|감소|떨어|오르/.test(q)) return null;
+  const cat = stoppedCategoryFromQuestion(q);
+  if (!cat && !/포켓몬|포카/.test(q)) {
+    return clarifyHtml('어떤 카테고리 추이를 볼까요?', [
+      { label: '문구', q: '문구 판매 추이' },
+      { label: '아이스크림', q: '아이스크림 판매 추이' },
+      { label: '포켓몬카드', q: '포켓몬카드 판매 추이' },
+      { label: '과자', q: '과자 판매 추이' },
+      { label: '음료', q: '음료 판매 추이' },
+    ]);
+  }
+  const subject = /포켓몬|포카/.test(q) ? resolveSubject('포켓몬카드') : resolveSubject(cat);
+  if (!subject) return null;
+  const { store } = resolveStore(q, false);
+  const dataEnd = latestDataDate();
+  const thisStart = dataEnd.slice(0,7) + '-01';
+  const day = parseInt(dataEnd.slice(8,10));
+  const endDate = new Date(dataEnd);
+  const prevEndDate = new Date(endDate.getFullYear(), endDate.getMonth()-1, Math.min(day, new Date(endDate.getFullYear(), endDate.getMonth(), 0).getDate()));
+  const prevYm = prevEndDate.getFullYear() + '-' + String(prevEndDate.getMonth()+1).padStart(2,'0');
+  const prevEnd = prevYm + '-' + String(prevEndDate.getDate()).padStart(2,'0');
+  const prevStart = prevYm + '-01';
+  const metric = detectMetric(q) || 'revenue';
+  const cur = aggregateSubject(aggregate({start:thisStart, end:dataEnd}, store || 'all'), subject);
+  const prev = aggregateSubject(aggregate({start:prevStart, end:prevEnd}, store || 'all'), subject);
+  const curVal = metric === 'qty' ? cur.totalQ : cur.totalS;
+  const prevVal = metric === 'qty' ? prev.totalQ : prev.totalS;
+  const diff = curVal - prevVal;
+  const rate = prevVal ? Math.round(Math.abs(diff) / prevVal * 100) : null;
+  const word = diff > 0 ? '늘었습니다' : diff < 0 ? '줄었습니다' : '같습니다';
+  const label = subject.value || cat;
+  const particle = /[가-힣]/.test(label) && ((label.charCodeAt(label.length - 1) - 44032) % 28) ? '은' : '는';
+  const valueText = metric === 'qty'
+    ? cur.totalQ + '개'
+    : KRWfmt(cur.totalS) + '원';
+  const prevText = metric === 'qty'
+    ? prev.totalQ + '개'
+    : KRWfmt(prev.totalS) + '원';
+  let html = '<b>' + escapeHtml(label) + ' ' + (metric === 'qty' ? '판매수량' : '매출') + ' 추이</b><br>';
+  html += '<span style="font-size:12px;color:#888;">' + escapeHtml(prevStart + ' ~ ' + prevEnd) + ' vs ' + escapeHtml(thisStart + ' ~ ' + dataEnd) + ' · 같은 일수 기준</span><table>';
+  html += '<tr><td>지난달 같은 기간</td><td>' + prevText + '</td></tr>';
+  html += '<tr><td>이번달 현재</td><td>' + valueText + '</td></tr>';
+  html += '</table>';
+  html += '<br><div class="ask-text-result">' + escapeHtml(label + particle) + ' 지난달 같은 기간보다 ' + (rate === null ? '비교 기준이 부족하지만 ' : rate + '% ') + word + '.</div>';
   return { html: html };
 }
 
@@ -3735,6 +3893,7 @@ function handleChatQuery(q){
   if (r = handleUnsoldRisk(q)) return r;
   if (r = handlePriceBand(q)) return r;
   if (r = handleHighPriceSold(q)) return r;
+  if (r = handleCategoryTrendQuestion(q)) return r;
   if (r = handleStoreCompare(q)) return r;
   if (r = handleRanking(q)) return r;
   if (r = handleMultiAggregate(q)) return r;
