@@ -1236,6 +1236,78 @@ body,
   border-color: #d7b999 !important;
 }
 
+/* UI 정렬 보정: 매출 탭 기준으로 상단 문구와 목록 밀도 통일 */
+.today-date,
+.priority-title .sub,
+.ask-title,
+.total-card {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.35 !important;
+  color: #8a654f !important;
+}
+.today-head,
+.ro-header,
+.ask-panel {
+  padding-top: 10px;
+}
+.today-head { margin-bottom: 8px !important; }
+.priority-title { padding-bottom: 8px !important; }
+.ask-title { margin-bottom: 8px !important; }
+.today-action-line {
+  display: grid !important;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.today-action-label {
+  white-space: nowrap;
+  word-break: keep-all;
+}
+.today-action-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: keep-all;
+  font-size: 11px !important;
+  font-weight: 450 !important;
+}
+.today-action-value.warn {
+  color: #b86f20 !important;
+  font-weight: 450 !important;
+}
+.today-list,
+.today-mini-list {
+  gap: 2px !important;
+}
+.today-list-row,
+.today-mini-row {
+  min-height: 0;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+.today-list-row .name,
+.today-mini-row .name {
+  line-height: 1.18 !important;
+}
+.today-list-row .value,
+.today-mini-row .value {
+  font-weight: 600 !important;
+}
+.cal-store-filter {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+.csf-btn {
+  width: 100% !important;
+  height: 32px !important;
+  min-width: 0 !important;
+  padding: 0 8px !important;
+  text-align: center;
+}
+
 </style>
 </head>
 <body>
@@ -1803,7 +1875,7 @@ function renderTodayCheck(){
   const row = dailyMap[latest] || {s1:0, s2:0};
   const pokemon = splitPokemonSales(latest);
   const topRows = topDailyProducts(latest).slice(0, 10);
-  const orders = reorderTodayItems().slice(0, 10);
+  const orders = reorderTodayItems().slice(0, 20);
   const alerts = anomalySignals(latest, row);
   const criteria = anomalyCriteria(latest, row);
   const actionSummary = todayStockActionSummary();
@@ -1837,7 +1909,7 @@ function renderTodayCheck(){
     </div>
     ${gapHtml}
     ${todayToggleCard('눈에 띄는 상품', '포켓몬카드 제외 · 기준일 매출 베스트 10', `<div class="today-list">${topHtml}</div>`)}
-    ${todayToggleCard('오늘 확인할 발주', '발주 1순위 · 미확인만', `<div class="today-list">${orderHtml}</div>`)}
+    ${todayToggleCard('오늘 확인할 발주', '발주 1순위 · 미확인 최대 20개', `<div class="today-list">${orderHtml}</div>`)}
     ${todayToggleCard('이상 신호', '기준별 정상 여부 확인', `<div class="today-alerts">${alertHtml}</div><div class="today-criteria">${criteriaHtml}</div>`)}
   </div>`;
 }
