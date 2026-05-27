@@ -1309,12 +1309,11 @@ body,
         <button id="chatSend">묻기</button>
       </div>
       <div class="chat-suggest" id="chatSuggest">
-        <div class="chat-suggest-card" data-q="이번 달 판매 순위">이번 달 판매 순위</div>
-        <div class="chat-suggest-card" data-q="판매 끊긴 상품">판매 끊긴 상품</div>
-        <div class="chat-suggest-card" data-q="토미카 판매 순위">토미카 순위</div>
-        <div class="chat-suggest-card" data-q="이번 달 포켓몬카드 판매 수량">포켓몬카드 수량</div>
-        <div class="chat-suggest-card" data-q="고단가 판매 상품">고단가 상품</div>
-        <div class="chat-suggest-card" data-q="문구 판매 추이">카테고리 추이</div>
+        <div class="chat-suggest-card" data-q="이번 주 과자 판매 순위">이번 주 과자 순위</div>
+        <div class="chat-suggest-card" data-q="1호점 포켓몬카드 박스 몇 개 팔렸어?">포켓몬 박스 수량</div>
+        <div class="chat-suggest-card" data-q="이번 달 토미카 판매 금액 순위">토미카 금액 순위</div>
+        <div class="chat-suggest-card" data-q="이번 달 색칠공부 얼마나 팔렸어?">색칠공부 수량</div>
+        <div class="chat-suggest-card" data-q="지난달엔 팔렸는데 이번 달 안 팔린 문구">판매 끊긴 문구</div>
       </div>
     </div>
     <div class="chat-msgs" id="chatMsgs"></div>
@@ -3528,15 +3527,24 @@ function todayStr(){ const d = new Date(); return d.getFullYear()+'-'+String(d.g
 function latestDataDate(){ return DAILY.length ? DAILY[DAILY.length - 1].d : todayStr(); }
 function addDays(s, n){ const d = new Date(s); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function inRange(d, start, end){ return d >= start && d <= end; }
+function mondayOfWeek(s){
+  const d = new Date(s);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 
 function hasExplicitPeriod(q){
-  return /이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|\d+\s*월|전체/.test(q);
+  return /이번\s*(?:달|주)|지난\s*(?:달|주)|최근\s*\d+\s*[일주]|어제|오늘|\d+\s*월|전체/.test(q);
 }
 
 function periodOnlyChoice(q){
   const trimmed = normalizeSubjectText(q);
   if (/^이번달$/.test(trimmed)) return '이번 달';
   if (/^지난달$/.test(trimmed)) return '지난 달';
+  if (/^이번주$/.test(trimmed)) return '이번 주';
+  if (/^지난주$/.test(trimmed)) return '지난 주';
   if (/^어제$/.test(trimmed)) return '어제';
   if (/^오늘$/.test(trimmed)) return '오늘';
   if (/^전체$/.test(trimmed)) return '전체';
@@ -3566,6 +3574,16 @@ function extractPeriod(q){
   if (/이번\s*달/.test(q)) {
     const t = dataEnd.slice(0,7);
     return { start: t+'-01', end: dataEnd, label: '이번 달' };
+  }
+  if (/이번\s*주/.test(q)) {
+    const start = mondayOfWeek(dataEnd);
+    return { start: start, end: dataEnd, label: '이번 주' };
+  }
+  if (/지난\s*주/.test(q)) {
+    const thisMonday = mondayOfWeek(dataEnd);
+    const start = addDays(thisMonday, -7);
+    const end = addDays(thisMonday, -1);
+    return { start: start, end: end, label: '지난 주' };
   }
   if (/지난\s*달/.test(q)) {
     const d = new Date(today); d.setDate(0);
@@ -3690,7 +3708,7 @@ function isPokemonSubject(sub){
 
 function detectMetric(q){
   const wantsQty = /몇\s*개|수량|판매량|몇\s*개\s*팔|얼마나\s*팔|개수/.test(q);
-  const wantsRevenue = /매출|금액|판매\s*금액|판매금액|얼마|원\b/.test(q);
+  const wantsRevenue = /매출|금액|판매\s*금액|판매금액|얼마(?!나\s*(?:팔|나갔))|원\b/.test(q);
   if (wantsQty && !wantsRevenue) return 'qty';
   if (wantsRevenue && !wantsQty) return 'revenue';
   if (wantsQty && wantsRevenue) return 'both';
@@ -3705,7 +3723,7 @@ function metricLabel(metric){
 
 function stripQuestionWords(q){
   return q
-    .replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|\d+\s*월/gi, ' ')
+    .replace(/이번\s*(?:달|주)|지난\s*(?:달|주)|최근\s*\d+\s*[일주]|어제|오늘|\d+\s*월/gi, ' ')
     .replace(/판매\s*금액|판매금액|판매\s*수량|판매수량|매출|금액|수량|판매량|몇\s*개|얼마나|얼마|팔렸어요|팔렸어|팔렸나요|팔렸나|팔림|팔렸|팔린|팔려|나갔어|나갔나요|나갔|나간|판매|개수|내역|목록|리스트|보여줘|보여|알려줘|알려|종류|뭐가|추이|흐름|증가|감소|늘었|줄었|늘|줄/gi, ' ')
     .replace(/1호점|2호점|일호점|이호점|철산|푸르지오|양\s*매장|전체|합계|두\s*매장|전\s*매장/gi, ' ')
     .replace(/\b[12]\b/g, ' ')
@@ -3742,7 +3760,7 @@ function periodBasis(period, store){
   return '기준: ' + period.start + ' ~ ' + period.end + ' / ' + sLabel;
 }
 
-function pokemonQtyAnswer(period, store, sLabel, agg, sub){
+function pokemonQtyAnswer(period, store, sLabel, agg, sub, q){
   const summary = aggregateSubject(agg, sub);
   let singleQ = 0, singleS = 0, boxQ = 0, boxS = 0, otherQ = 0, otherS = 0;
   for (const priceText in summary.byPrice) {
@@ -3755,6 +3773,12 @@ function pokemonQtyAnswer(period, store, sLabel, agg, sub){
     } else {
       otherQ += row.q; otherS += row.s;
     }
+  }
+  if (/박스|상자|box/i.test(q || '')) {
+    return { text: period.label + sLabel + ' 포켓몬카드 박스(20,000원 이상) ' + boxQ + '개 / ' + KRWfmt(boxS) + '원이에용.' };
+  }
+  if (/낱개|팩/.test(q || '')) {
+    return { text: period.label + sLabel + ' 포켓몬카드 낱개/팩(1,000원~19,999원) ' + singleQ + '개 / ' + KRWfmt(singleS) + '원이에용.' };
   }
   let text = period.label + sLabel + ' 포켓몬카드 총 ' + summary.totalQ + '개 / ' + KRWfmt(summary.totalS) + '원이에용.'
     + '\n낱개/팩(1,000원~19,999원): ' + singleQ + '개 / ' + KRWfmt(singleS) + '원'
@@ -4043,8 +4067,8 @@ function handleRanking(q){
   }
   const period = extractPeriod(q);
   const { store } = resolveStore(q, false);
-  const byRevenue = /매출.*베스트|베스트.*매출/.test(q);
-  const cleaned = q.replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|매출|수량|판매|베스트|순위|랭킹|top|\d+|매장|호점|철산|푸르지오|양|전체|합계|vs/gi, '').trim();
+  const byRevenue = /(매출|금액|판매\s*금액|판매금액)/.test(q);
+  const cleaned = q.replace(/이번\s*(?:달|주)|지난\s*(?:달|주)|최근\s*\d+\s*[일주]|어제|오늘|매출|금액|판매\s*금액|판매금액|수량|판매|베스트|순위|랭킹|top|\d+|매장|호점|철산|푸르지오|양|전체|합계|vs/gi, '').trim();
   const sub = resolveSubject(cleaned);
   const agg = aggregate(period, store || 'all');
   let list = Object.entries(agg).map(([n, v]) => ({ n: n, q: v.q, s: v.s, cat: (PRODUCTS[n] && PRODUCTS[n].cat) || '' }));
@@ -4062,7 +4086,7 @@ function handleRanking(q){
 function handleStoreCompare(q){
   if (!/(vs|대비|비교|매장별)/i.test(q)) return null;
   const period = extractPeriod(q);
-  const cleaned = q.replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|매출|수량|개|얼마|몇|매장|매장별|호점|철산|푸르지오|vs|대비|비교|1|2|\d/gi, '').trim();
+  const cleaned = q.replace(/이번\s*(?:달|주)|지난\s*(?:달|주)|최근\s*\d+\s*[일주]|어제|오늘|매출|수량|개|얼마|몇|매장|매장별|호점|철산|푸르지오|vs|대비|비교|1|2|\d/gi, '').trim();
   const sub = resolveSubject(cleaned);
   const a1 = aggregate(period, 's1');
   const a2 = aggregate(period, 's2');
@@ -4172,11 +4196,11 @@ function handleAggregate(q){
   if (/(vs|대비|비교|매장별)/i.test(q)) return null;
   const period = extractPeriod(q);
   const cleaned = q
-    .replace(/이번\s*달|지난\s*달|최근\s*\d+\s*[일주]|어제|오늘|매출|금액|판매\s*금액|판매금액|수량|얼마나|얼마|몇\s*개|개|판매량|팔렸어요|팔렸어|팔렸나요|팔렸나|팔림|팔렸|팔린|팔려|나갔어|나갔나요|나갔|나간|판매|내역|목록|리스트|보여줘|보여|알려줘|알려|매장|호점|철산|푸르지오|양|전체|합계|\d+\s*월/gi, ' ')
+    .replace(/이번\s*(?:달|주)|지난\s*(?:달|주)|최근\s*\d+\s*[일주]|어제|오늘|매출|금액|판매\s*금액|판매금액|수량|얼마나|얼마|몇\s*개|개|판매량|팔렸어요|팔렸어|팔렸나요|팔렸나|팔림|팔렸|팔린|팔려|나갔어|나갔나요|나갔|나간|판매|내역|목록|리스트|보여줘|보여|알려줘|알려|매장|호점|철산|푸르지오|양|전체|합계|\d+\s*월/gi, ' ')
     .replace(/\b[12]\b/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  let sub = resolveSubject(cleaned);
+  let sub = /포켓몬|포카/.test(q) ? resolveSubject('포켓몬카드') : resolveSubject(cleaned);
   if (!sub && /도서|책|북|면세|색칠|따라그리기|스티커북|놀이북/.test(q)) sub = resolveSubject(q) || { type: 'book', value: '도서류' };
   if (!sub) {
     const r = resolveStore(q, false);
@@ -4201,7 +4225,7 @@ function handleAggregate(q){
   if (totalQ === 0) return { text: period.label + sLabel + ' ' + sub.value + ' 판매 내역이 없어용.' };
   const askQty = /몇\s*개|수량|판매량|개수|얼마나\s*(?:팔|나갔)/.test(q) && !/매출|금액|판매\s*금액|판매금액/.test(q);
   const askRev = /매출|금액|판매\s*금액|판매금액|얼마(?!나)/.test(q) && !/몇\s*개|수량|판매량|개수|얼마나\s*(?:팔|나갔)/.test(q);
-  if (askQty && isPokemonSubject(sub)) return pokemonQtyAnswer(period, store, sLabel, agg, sub);
+  if (askQty && isPokemonSubject(sub)) return pokemonQtyAnswer(period, store, sLabel, agg, sub, q);
   if (askQty) return { text: period.label + sLabel + ' ' + sub.value + ' ' + totalQ + '개 팔렸어용.' };
   if (askRev) return { text: period.label + sLabel + ' ' + sub.value + ' 매출 ' + KRWfmt(totalS) + '원이에용.' };
   return { text: period.label + sLabel + ' ' + sub.value + ': ' + totalQ + '개 / ' + KRWfmt(totalS) + '원이에용.' };
