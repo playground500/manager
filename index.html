@@ -58,8 +58,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .cal-nav { display: flex; gap: 8px; align-items: center; }
 .cal-nav-btn { width: 32px; height: 32px; border: none; background: #f2f2f7; border-radius: 50%;
                 font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.cal-store-filter { display: flex; gap: 6px; padding: 0 16px 10px; }
-.csf-btn { flex: 1; padding: 6px 0; border-radius: 20px; font-size: 12px; font-weight: 600;
+.cal-store-filter { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0 16px 10px; }
+.csf-btn { width: 100%; min-width: 0; height: 32px; padding: 0 8px; border-radius: 20px; font-size: 12px; font-weight: 600;
              border: 1.5px solid #e0e0e0; background: #fff; color: #636366; cursor: pointer; }
 .csf-btn.active { background: #1d1d1f; color: #fff; border-color: #1d1d1f; }
 .cal-weekdays { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); padding: 0 6px; }
@@ -237,8 +237,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .stock-summary-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin:0 0 10px; }
 .stock-summary-card { background:#fffdf9; border:1px solid #f3dfc7; border-radius:12px; padding:10px 9px;
                       box-shadow:0 3px 0 rgba(236,196,129,.16), 0 8px 18px rgba(116,81,45,.04); }
+.stock-summary-card { cursor:pointer; text-align:left; }
+.stock-summary-card:active { transform:scale(.98); }
 .stock-summary-label { color:#9a8c80; font-size:10px; font-weight:500; line-height:1.25; }
 .stock-summary-value { margin-top:3px; color:#3f332c; font-size:18px; font-weight:650; line-height:1; }
+.stock-summary-popup-bg { display:none; position:fixed; inset:0; z-index:1300; background:rgba(49,36,29,.34); align-items:flex-end; }
+.stock-summary-popup-bg.open { display:flex; }
+.stock-summary-popup { width:100%; max-height:78vh; background:#fffdf9; border-radius:18px 18px 0 0; padding:14px 14px 24px;
+  box-shadow:0 -8px 24px rgba(49,36,29,.18); overflow:hidden; display:flex; flex-direction:column; }
+.stock-summary-popup-head { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#4b3528; font-size:15px; font-weight:700; margin-bottom:10px; }
+.stock-summary-popup-head button { border:1px solid #ead7c0; background:#fffaf2; color:#745845; border-radius:999px; padding:7px 11px; font-size:12px; cursor:pointer; }
+.stock-summary-popup-body { overflow:auto; display:flex; flex-direction:column; gap:5px; }
+.stock-summary-popup-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; border:1px solid #f3e1cd; background:#fff; border-radius:10px; padding:8px 10px; }
+.stock-summary-popup-name { min-width:0; color:#3f332c; font-size:12px; font-weight:550; line-height:1.3; }
+.stock-summary-popup-meta { margin-top:2px; color:#9a8c80; font-size:10px; font-weight:450; line-height:1.25; }
+.stock-summary-popup-value { color:#4f3422; font-size:12px; font-weight:650; white-space:nowrap; }
 .stock-gap-list { display:grid; gap:7px; }
 .stock-gap-row { display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center; background:#fffdf9;
                  border:1px solid #f3dfc7; border-radius:10px; padding:9px 10px; }
@@ -315,9 +328,7 @@ body.stock-tip-open .stock-mini-tooltip { pointer-events: none; }
   .stock-summary-value { font-size: 17px; }
   .stock-segment,
   .stock-paper-filter,
-  .chat-suggest,
   .chat-template-list,
-  .cal-store-filter,
   .trend-segment {
     display: flex;
     flex-wrap: nowrap;
@@ -327,15 +338,11 @@ body.stock-tip-open .stock-mini-tooltip { pointer-events: none; }
   }
   .stock-segment::-webkit-scrollbar,
   .stock-paper-filter::-webkit-scrollbar,
-  .chat-suggest::-webkit-scrollbar,
   .chat-template-list::-webkit-scrollbar,
-  .cal-store-filter::-webkit-scrollbar,
   .trend-segment::-webkit-scrollbar { display: none; }
   .stock-view-btn,
   .stock-filter-btn,
-  .chat-suggest-card,
   .chat-template-q,
-  .csf-btn,
   .trend-btn {
     flex: 0 0 auto;
     white-space: nowrap;
@@ -344,8 +351,7 @@ body.stock-tip-open .stock-mini-tooltip { pointer-events: none; }
   .chat-template-tabs { gap: 5px; }
   .chat-template-tab { padding: 7px 5px; font-size: 11px; }
   .chat-template-list { flex-wrap: nowrap; gap: 6px; }
-  .chat-template-q,
-  .chat-suggest-card { padding: 7px 9px; font-size: 11px; }
+  .chat-template-q { padding: 7px 9px; font-size: 11px; }
   .ask-input-row { padding: 6px; border-radius: 12px; }
   .ask-input-row input { font-size: 13px; padding: 7px 5px; }
   .ask-input-row button { padding: 8px 12px; font-size: 12px; }
@@ -749,6 +755,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 .chat-suggest { display:flex; gap:7px; overflow-x:auto; padding:10px 0 0; -webkit-overflow-scrolling:touch; }
 .chat-suggest::-webkit-scrollbar { display:none; }
 .chat-suggest-title { display:none; }
+.chat-suggest { display:none; }
 .chat-suggest-card { flex:0 0 auto; background:#fffaf2; border:1px solid #ead7c0; color:#745845; border-radius:999px; padding:8px 11px; font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; }
 .chat-suggest-card:hover { background:#fff2de; }
 .chat-suggest-card:active { transform:scale(0.98); }
@@ -794,14 +801,14 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 .today-date { font-size: 13px; color: #8a654f; font-weight: 750; white-space: normal; text-align: left; }
 .today-grid { display: grid; gap: 8px; }
 .today-action-grid { display:grid; grid-template-columns:1fr; gap:7px; }
-.today-action-card { background:#fffdf9; border:1px solid #f3dfc7; border-radius:11px; padding:9px 10px; cursor:pointer;
+.today-action-card { background:#fffdf9; border:1px solid #f3dfc7; border-radius:11px; padding:8px 10px; cursor:pointer;
   box-shadow:0 3px 0 rgba(236,196,129,.18), 0 8px 18px rgba(116,81,45,.04); }
 .today-action-card:active { transform:scale(.98); }
 .today-action-card.info { cursor:default; }
 .today-action-card.info:active { transform:none; }
 .today-action-line { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-.today-action-label { color:#9a8c80; font-size:11px; font-weight:500; line-height:1.25; text-align:left; }
-.today-action-value { color:#3f332c; font-size:15px; font-weight:700; line-height:1.25; text-align:right; }
+.today-action-label { color:#9a8c80; font-size:10.5px; font-weight:450; line-height:1.25; text-align:left; }
+.today-action-value { color:#5d4738; font-size:11.5px; font-weight:500; line-height:1.3; text-align:right; }
 .today-action-value.warn { color:#d86448; }
 .today-mini-list { display:flex; flex-direction:column; gap:7px; margin-top:9px; }
 .today-mini-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:7px; align-items:center; font-size:11.5px; padding:3px 0; }
@@ -1684,12 +1691,12 @@ function topDailyProducts(date){
     .filter(r => !isPokemonCardItem(r.n))
     .slice()
     .sort((a,b) => Number(b.s || 0) - Number(a.s || 0))
-    .slice(0,5);
+    .slice(0,10);
 }
 function reorderTodayItems(){
   return ITEMS
     .filter(item => item.tier === 'urgent' && getItemState(item.id).status === 0)
-    .slice(0,5);
+    .slice(0,20);
 }
 function icecreamSalesForDate(date){
   return sumItems(DAILY_ITEMS[date] || [], isIcecreamItem).s;
@@ -2318,6 +2325,7 @@ let stockOpenState = {};
 let stockStoreView = { stockIcecream: 'all', stockSnack: 'all' };
 let stockWeeklyExpanded = {};
 let stockPaperFilter = { stockPaperStopped: 'active', stockPaperHigh: 'active' };
+let stockSummaryPopupData = {};
 const STOCK_STATUS_LABELS = ['미확인', '입고완', '제외', '확인필요'];
 const STOCK_STATUS_CLASSES = ['s0', 's1', 's2', 's3'];
 
@@ -2515,15 +2523,43 @@ function stockSummaryHtml(stoppedCounts, highCounts){
   const done = stoppedCounts.done + highCounts.done;
   const excluded = stoppedCounts.excluded + highCounts.excluded;
   const total = stoppedCounts.all + highCounts.all;
-  const card = (label, value) => `<div class="stock-summary-card"><div class="stock-summary-label">${label}</div><div class="stock-summary-value">${value}</div></div>`;
+  const card = (key, label, value) => `<button type="button" class="stock-summary-card" onclick="openStockSummaryPopup('${key}')"><div class="stock-summary-label">${label}</div><div class="stock-summary-value">${value}</div></button>`;
   return `<div class="stock-summary-grid">
-    ${card('확인 필요', need)}
-    ${card('입고완', done)}
-    ${card('제외', excluded)}
-    ${card('판매 끊긴 문구', stoppedCounts.all)}
-    ${card('고단가 확인', highCounts.all)}
-    ${card('전체 대상', total)}
+    ${card('need', '확인 필요', need)}
+    ${card('done', '입고완', done)}
+    ${card('excluded', '제외', excluded)}
+    ${card('stopped', '판매 끊긴 문구', stoppedCounts.all)}
+    ${card('high', '고단가 확인', highCounts.all)}
+    ${card('all', '전체 대상', total)}
   </div>`;
+}
+function ensureStockSummaryPopup(){
+  let modal = document.getElementById('stockSummaryPopup');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'stockSummaryPopup';
+    modal.className = 'stock-summary-popup-bg';
+    modal.innerHTML = '<div class="stock-summary-popup"><div class="stock-summary-popup-head"><div id="stockSummaryPopupTitle">목록</div><button type="button" onclick="closeStockSummaryPopup()">닫기</button></div><div id="stockSummaryPopupBody" class="stock-summary-popup-body"></div></div>';
+    modal.addEventListener('click', e => { if (e.target === modal) closeStockSummaryPopup(); });
+    document.body.appendChild(modal);
+  }
+  return modal;
+}
+function openStockSummaryPopup(key){
+  const data = stockSummaryPopupData[key] || {title:'목록', rows:[]};
+  const modal = ensureStockSummaryPopup();
+  document.getElementById('stockSummaryPopupTitle').textContent = data.title + ' ' + data.rows.length + '개';
+  const rows = data.rows.slice(0, 120);
+  document.getElementById('stockSummaryPopupBody').innerHTML = rows.length ? rows.map((row, idx) => `
+    <div class="stock-summary-popup-row">
+      <div class="stock-summary-popup-name">${idx+1}. ${escapeHtml(row.name)}<div class="stock-summary-popup-meta">${escapeHtml(row.meta || '')}</div></div>
+      <div class="stock-summary-popup-value">${escapeHtml(row.value || '')}</div>
+    </div>`).join('') : '<div class="empty"><div class="empty-icon">-</div><div>표시할 상품이 없어요.</div></div>';
+  modal.classList.add('open');
+}
+function closeStockSummaryPopup(){
+  const modal = document.getElementById('stockSummaryPopup');
+  if (modal) modal.classList.remove('open');
 }
 function currentMonthPeriod(){
   const end = latestDataDate();
@@ -2583,6 +2619,25 @@ function renderList(){
   };
   const stoppedCounts = countStatuses(stoppedAll, stoppedId);
   const highCounts = countStatuses(highAll, highId);
+  const popupRow = (item, type) => ({
+    name: item.name,
+    meta: type === 'stopped'
+      ? STOP_CANDIDATES.prevMonth + ' ' + (item.prevQty || 0) + '개 → ' + STOP_CANDIDATES.currentMonth + ' 0개 · 마지막 ' + (item.lastPrevSale || '-')
+      : '최근 14일 ' + (item.q14 || 0) + '개 · 마지막 ' + (item.lastSale || '-'),
+    value: type === 'stopped' ? (item.prevQty || 0) + '개' : (item.q14 || 0) + '개'
+  });
+  const statusOf = (id) => getItemState(id).status || 0;
+  const stoppedRows = stoppedAll.map(item => ({item, id: stoppedId(item), type:'stopped'}));
+  const highRows = highAll.map(item => ({item, id: highId(item), type:'high'}));
+  const allRows = stoppedRows.concat(highRows);
+  stockSummaryPopupData = {
+    need: { title:'확인 필요', rows: allRows.filter(row => [0,3].includes(statusOf(row.id))).map(row => popupRow(row.item, row.type)) },
+    done: { title:'입고완', rows: allRows.filter(row => statusOf(row.id) === 1).map(row => popupRow(row.item, row.type)) },
+    excluded: { title:'제외', rows: allRows.filter(row => statusOf(row.id) === 2).map(row => popupRow(row.item, row.type)) },
+    stopped: { title:'판매 끊긴 문구', rows: stoppedRows.map(row => popupRow(row.item, row.type)) },
+    high: { title:'고단가 확인', rows: highRows.map(row => popupRow(row.item, row.type)) },
+    all: { title:'전체 대상', rows: allRows.map(row => popupRow(row.item, row.type)) },
+  };
   const stopped = filterPaperItems('stockPaperStopped', stoppedAll, stoppedId);
   const high = filterPaperItems('stockPaperHigh', highAll, highId);
   wrap.innerHTML =
