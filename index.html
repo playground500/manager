@@ -650,6 +650,17 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 .chat-suggest-card { flex:0 0 auto; background:#fffaf2; border:1px solid #ead7c0; color:#745845; border-radius:999px; padding:8px 11px; font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; }
 .chat-suggest-card:hover { background:#fff2de; }
 .chat-suggest-card:active { transform:scale(0.98); }
+.chat-template { margin-top:10px; background:#fffdf9; border:1px solid #f3dfc7; border-radius:14px; padding:10px;
+  box-shadow:0 3px 0 rgba(236,196,129,.16), 0 8px 18px rgba(116,81,45,.04); }
+.chat-template-tabs { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; }
+.chat-template-tab { border:1px solid #ead7c0; background:#fffaf2; color:#745845; border-radius:999px; padding:8px 6px;
+  font-size:12px; font-weight:550; cursor:pointer; }
+.chat-template-tab.active { background:#4f3422; border-color:#4f3422; color:#fff; }
+.chat-template-list { display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; }
+.chat-template-q { border:1px solid #ead7c0; background:#fffaf2; color:#745845; border-radius:999px; padding:7px 10px;
+  font-size:12px; font-weight:500; cursor:pointer; }
+.chat-template-q:active,
+.chat-template-tab:active { transform:scale(.98); }
 .chat-msgs { display:flex; flex-direction:column; gap:10px; padding-top:4px; }
 .chat-empty { background:#fffdf9; border:1px solid #f3dfc7; border-radius:14px; padding:14px; color:#745845; box-shadow:0 3px 0 rgba(236,196,129,.22), 0 8px 18px rgba(116,81,45,.05); }
 .chat-empty-title { color:#4b3528; font-size:14px; font-weight:650; margin-bottom:6px; }
@@ -1338,6 +1349,14 @@ body,
         <div class="chat-suggest-card" data-q="이번 달 토미카 판매 금액 순위">토미카 금액 순위</div>
         <div class="chat-suggest-card" data-q="이번 달 색칠공부 얼마나 팔렸어?">색칠공부 수량</div>
         <div class="chat-suggest-card" data-q="지난달엔 팔렸는데 이번 달 안 팔린 문구">판매 끊긴 문구</div>
+      </div>
+      <div class="chat-template">
+        <div class="chat-template-tabs">
+          <button class="chat-template-tab active" data-template="sales">판매 확인</button>
+          <button class="chat-template-tab" data-template="rank">순위 보기</button>
+          <button class="chat-template-tab" data-template="stock">재고 의심</button>
+        </div>
+        <div class="chat-template-list" id="chatTemplateList"></div>
       </div>
     </div>
     <div class="chat-msgs" id="chatMsgs"></div>
@@ -3538,6 +3557,37 @@ function initApp() {
 
 let chatInited = false;
 let pendingChatQuery = null;
+let activeChatTemplate = 'sales';
+const CHAT_TEMPLATES = {
+  sales: [
+    { label:'도서류 내역', q:'이번 달 도서류 판매 내역' },
+    { label:'색칠공부 수량', q:'이번 달 색칠공부 얼마나 팔렸어?' },
+    { label:'음료 금액', q:'5월 음료 판매 금액' },
+    { label:'포켓몬 박스', q:'1호점 포켓몬카드 박스 몇 개 팔렸어?' },
+  ],
+  rank: [
+    { label:'과자 순위', q:'이번 주 과자 판매 순위' },
+    { label:'토미카 금액', q:'이번 달 토미카 판매 금액 순위' },
+    { label:'도서류 순위', q:'지난달 도서류 판매 순위' },
+    { label:'슬라임 수량', q:'이번 달 슬라임 판매 수량 순위' },
+  ],
+  stock: [
+    { label:'판매 끊긴 문구', q:'지난달엔 팔렸는데 이번 달 안 팔린 문구' },
+    { label:'10일 미판매', q:'최근 10일간 안 팔린 만원 이상 상품' },
+    { label:'고단가 확인', q:'고단가 판매 상품' },
+    { label:'5월 끊긴 문구', q:'문구 중에서 5월에 끊긴 상품' },
+  ],
+};
+function renderChatTemplates(){
+  const list = document.getElementById('chatTemplateList');
+  if (!list) return;
+  document.querySelectorAll('.chat-template-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-template') === activeChatTemplate);
+  });
+  list.innerHTML = (CHAT_TEMPLATES[activeChatTemplate] || []).map(item =>
+    '<button class="chat-template-q" data-q="' + escapeHtml(item.q) + '">' + escapeHtml(item.label) + '</button>'
+  ).join('');
+}
 function initChatTab(){
   if (chatInited) return;
   chatInited = true;
@@ -3552,10 +3602,25 @@ function initChatTab(){
     if (!btn) return;
     sendChat(btn.getAttribute('data-q'));
   });
+  document.querySelectorAll('.chat-template-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeChatTemplate = btn.getAttribute('data-template') || 'sales';
+      renderChatTemplates();
+    });
+  });
+  const templateList = document.getElementById('chatTemplateList');
+  if (templateList) {
+    templateList.addEventListener('click', e => {
+      const btn = e.target.closest('.chat-template-q');
+      if (!btn) return;
+      sendChat(btn.getAttribute('data-q'));
+    });
+  }
   const inp = document.getElementById('chatInput');
   const btn = document.getElementById('chatSend');
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
   btn.addEventListener('click', () => sendChat());
+  renderChatTemplates();
   renderChatEmpty();
 }
 
