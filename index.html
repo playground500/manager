@@ -234,6 +234,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 .stock-filter-btn { flex:0 0 auto; border:1px solid #ead7c0; background:#fffaf2; color:#745845; border-radius:999px;
                     padding:7px 10px; font-size:11px; font-weight:500; cursor:pointer; }
 .stock-filter-btn.active { background:#4f3422; border-color:#4f3422; color:#fff; }
+.stock-summary-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin:0 0 10px; }
+.stock-summary-card { background:#fffdf9; border:1px solid #f3dfc7; border-radius:12px; padding:10px 9px;
+                      box-shadow:0 3px 0 rgba(236,196,129,.16), 0 8px 18px rgba(116,81,45,.04); }
+.stock-summary-label { color:#9a8c80; font-size:10px; font-weight:500; line-height:1.25; }
+.stock-summary-value { margin-top:3px; color:#3f332c; font-size:18px; font-weight:650; line-height:1; }
+.stock-gap-list { display:grid; gap:7px; }
+.stock-gap-row { display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center; background:#fffdf9;
+                 border:1px solid #f3dfc7; border-radius:10px; padding:9px 10px; }
+.stock-gap-name { min-width:0; color:#3f332c; font-size:12px; font-weight:520; line-height:1.35; }
+.stock-gap-meta { margin-top:3px; color:#9a8c80; font-size:10px; font-weight:450; line-height:1.35; }
+.stock-gap-value { color:#4f3422; font-size:12px; font-weight:650; white-space:nowrap; }
 .stock-mini-tooltip { position: fixed; transform: translate(-50%, -112%); min-width: 112px; max-width: 180px;
                       padding: 7px 9px; border-radius: 10px; background: rgba(49,36,29,.94); color: #fff;
                       font-size: 11px; font-weight: 650; line-height: 1.35; text-align: center; pointer-events: none;
@@ -241,6 +252,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'N
 body.stock-tip-open .stock-mini-tooltip { pointer-events: none; }
 @media (max-width: 460px) {
   .stock-store-grid { grid-template-columns: 1fr; }
+  .stock-summary-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
 }
 
 /* ── 모달 ── */
@@ -2266,14 +2278,17 @@ function filterPaperItems(sectionId, items, idFn){
   if (filter === 'all') return items;
   return items.filter(item => {
     const status = getItemState(idFn(item)).status || 0;
-    return filter === 'excluded' ? status === 2 : status !== 2;
+    if (filter === 'excluded') return status === 2;
+    if (filter === 'done') return status === 1;
+    return status === 0 || status === 3;
   });
 }
 function stockPaperFilterHtml(id, counts){
   const active = stockPaperFilter[id] || 'active';
   const btn = (key, label) => `<button class="stock-filter-btn ${active === key ? 'active' : ''}" onclick="event.stopPropagation();setStockPaperFilter('${id}','${key}',this)">${label}</button>`;
   return `<div class="stock-paper-filter">
-    ${btn('active', '확인대상 ' + counts.active)}
+    ${btn('active', '확인필요 ' + counts.active)}
+    ${btn('done', '입고완 ' + counts.done)}
     ${btn('excluded', '제외 ' + counts.excluded)}
     ${btn('all', '전체 ' + counts.all)}
   </div>`;
@@ -2294,6 +2309,57 @@ function stockPaperSection(id, title, sub, bodyHtml, note, filterHtml){
     </div>
   </section>`;
 }
+function stockSummaryHtml(stoppedCounts, highCounts){
+  const need = stoppedCounts.active + highCounts.active;
+  const done = stoppedCounts.done + highCounts.done;
+  const excluded = stoppedCounts.excluded + highCounts.excluded;
+  const total = stoppedCounts.all + highCounts.all;
+  const card = (label, value) => `<div class="stock-summary-card"><div class="stock-summary-label">${label}</div><div class="stock-summary-value">${value}</div></div>`;
+  return `<div class="stock-summary-grid">
+    ${card('확인 필요', need)}
+    ${card('입고완', done)}
+    ${card('제외', excluded)}
+    ${card('판매 끊긴 문구', stoppedCounts.all)}
+    ${card('고단가 확인', highCounts.all)}
+    ${card('전체 대상', total)}
+  </div>`;
+}
+function currentMonthPeriod(){
+  const end = latestDataDate();
+  return { start: end.slice(0,7) + '-01', end: end, label: '이번 달' };
+}
+function aggregateStoreMonth(store){
+  const period = currentMonthPeriod();
+  return aggregate(period, store);
+}
+function stockGapSignals(){
+  const s1 = aggregateStoreMonth('s1');
+  const s2 = aggregateStoreMonth('s2');
+  const rows = [];
+  const cats = new Set(['문구', '아이스크림', '과자']);
+  const names = new Set([...Object.keys(s1), ...Object.keys(s2)]);
+  for (const name of names) {
+    if (/포켓몬|포카/.test(name)) continue;
+    const p = PRODUCTS[name] || {};
+    if (!cats.has(p.cat)) continue;
+    const q1 = (s1[name] && s1[name].q) || 0;
+    const q2 = (s2[name] && s2[name].q) || 0;
+    if (q1 >= 3 && q2 === 0) rows.push({name, cat:p.cat, from:'1호점', missing:'2호점', qty:q1, sales:(s1[name] && s1[name].s) || 0});
+    if (q2 >= 3 && q1 === 0) rows.push({name, cat:p.cat, from:'2호점', missing:'1호점', qty:q2, sales:(s2[name] && s2[name].s) || 0});
+  }
+  return rows.sort((a,b) => b.qty - a.qty || b.sales - a.sales || a.name.localeCompare(b.name, 'ko')).slice(0, 10);
+}
+function renderStockGapSignals(){
+  const rows = stockGapSignals();
+  const body = rows.length ? rows.map((item, idx) => `
+    <div class="stock-gap-row">
+      <div class="stock-gap-name">${idx+1}. ${escapeHtml(item.name)}
+        <div class="stock-gap-meta">${escapeHtml(item.cat)} · ${escapeHtml(item.from)} ${item.qty}개 판매 · ${escapeHtml(item.missing)} 0개</div>
+      </div>
+      <div class="stock-gap-value">${item.qty}개</div>
+    </div>`).join('') : '<div class="empty"><div class="empty-icon">?</div><div>이번 달 지점 차이 신호가 없어요</div></div>';
+  return stockPaperSection('stockStoreGap', '지점 차이 신호', '이번 달 한 지점 3개+ · 다른 지점 0개 · 포켓몬 제외', `<div class="stock-gap-list">${body}</div>`, '한 지점만 팔리는 상품은 반대 지점의 진열 빠짐이나 재고 소진 가능성을 먼저 확인합니다.', '');
+}
 function renderList(){
   const wrap = document.getElementById('stockCheck');
   if (!wrap) return;
@@ -2304,22 +2370,26 @@ function renderList(){
     .sort((a,b) => (b.q14 || 0) - (a.q14 || 0) || (b.s14 || 0) - (a.s14 || 0) || String(b.lastSale || '').localeCompare(String(a.lastSale || '')) || String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
   const stoppedId = item => 'stopped:' + item.barcode;
   const highId = item => 'high:' + (item.barcode || item.name);
-  const stoppedCounts = {
-    all: stoppedAll.length,
-    excluded: stoppedAll.filter(item => (getItemState(stoppedId(item)).status || 0) === 2).length
+  const countStatuses = (items, idFn) => {
+    const counts = { all: items.length, active: 0, done: 0, excluded: 0 };
+    for (const item of items) {
+      const status = getItemState(idFn(item)).status || 0;
+      if (status === 2) counts.excluded++;
+      else if (status === 1) counts.done++;
+      else counts.active++;
+    }
+    return counts;
   };
-  stoppedCounts.active = stoppedCounts.all - stoppedCounts.excluded;
-  const highCounts = {
-    all: highAll.length,
-    excluded: highAll.filter(item => (getItemState(highId(item)).status || 0) === 2).length
-  };
-  highCounts.active = highCounts.all - highCounts.excluded;
+  const stoppedCounts = countStatuses(stoppedAll, stoppedId);
+  const highCounts = countStatuses(highAll, highId);
   const stopped = filterPaperItems('stockPaperStopped', stoppedAll, stoppedId);
   const high = filterPaperItems('stockPaperHigh', highAll, highId);
   wrap.innerHTML =
+    stockSummaryHtml(stoppedCounts, highCounts) +
+    renderStockGapSignals() +
     stockWeeklySection('stockIcecream', '아이스크림', week + ' 많이 팔린 순 · 지점별 상위 50개', (STOCK_CHECK_DATA && STOCK_CHECK_DATA.icecream) || {s1:[], s2:[]}) +
-    stockPaperSection('stockPaperStopped', '문구 · 판매 끊긴 상품', STOP_CANDIDATES.prevMonth + ' 3개 이상 판매 · ' + STOP_CANDIDATES.currentMonth + ' 0개', renderStoppedPaperList(stopped), '지난달 많이 팔렸는데 이번 달 0개인 문구예요. 발주누락, 품절, 진열 빠짐을 먼저 확인하면 됩니다. 포켓몬카드는 제외했어요.', stockPaperFilterHtml('stockPaperStopped', stoppedCounts)) +
-    stockPaperSection('stockPaperHigh', '문구 · 고단가 확인', '최근 14일 판매된 10,000원 이상 상품', renderHighPriceList(high), '만원 이상 문구는 재고가 적은 경우가 많아서, 최근 판매된 순서대로 입고 여부를 확인합니다. 포켓몬카드는 제외했어요.', stockPaperFilterHtml('stockPaperHigh', highCounts)) +
+    stockPaperSection('stockPaperStopped', '문구 · 판매 끊긴 상품', STOP_CANDIDATES.prevMonth + ' 3개+ · ' + STOP_CANDIDATES.currentMonth + ' 0개 · 포켓몬 제외', renderStoppedPaperList(stopped), '', stockPaperFilterHtml('stockPaperStopped', stoppedCounts)) +
+    stockPaperSection('stockPaperHigh', '문구 · 고단가 확인', '최근 14일 · 10,000원+ · 포켓몬 제외', renderHighPriceList(high), '', stockPaperFilterHtml('stockPaperHigh', highCounts)) +
     stockWeeklySection('stockSnack', '과자', week + ' 많이 팔린 순 · 지점별 상위 30개', (STOCK_CHECK_DATA && STOCK_CHECK_DATA.snack) || {s1:[], s2:[]});
   bindStockTooltips();
 }
