@@ -1335,9 +1335,117 @@ body,
     font-size: 9.5px !important;
     line-height: 1.15 !important;
   }
-  .stock-summary-value {
+.stock-summary-value {
     font-size: 15px !important;
   }
+}
+
+.manager-report-entry {
+  border: 1px solid #ead9c4;
+  background: #fffaf2;
+  border-radius: 12px;
+  padding: 11px 13px;
+  text-align: left;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(79, 52, 34, .06);
+  cursor: pointer;
+}
+.manager-report-entry .eyebrow,
+.report-list-card .eyebrow {
+  color: #8a654f;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.manager-report-entry .summary,
+.report-list-card .summary {
+  margin-top: 4px;
+  color: #3f2d22;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+.manager-report-section {
+  padding: 0 14px 20px;
+}
+.report-head {
+  padding: 10px 0 8px;
+}
+.report-title-line {
+  color: #8a654f;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.report-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  margin-bottom: 8px;
+  padding: 0 12px;
+  border: 1px solid #ead9c4;
+  border-radius: 999px;
+  background: #fffaf2;
+  color: #4f3422;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.report-board {
+  display: grid;
+  gap: 10px;
+}
+.report-list-card,
+.report-detail {
+  border: 1px solid #ead9c4;
+  background: #fffaf2;
+  border-radius: 12px;
+  padding: 13px;
+  box-shadow: 0 4px 12px rgba(79, 52, 34, .06);
+}
+.report-list-card {
+  cursor: pointer;
+}
+.report-list-card.active {
+  outline: 2px solid rgba(79, 52, 34, .22);
+}
+.report-detail-title {
+  color: #3f2d22;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+.report-detail-date {
+  margin-top: 3px;
+  color: #8a654f;
+  font-size: 12px;
+  font-weight: 600;
+}
+.report-block {
+  margin-top: 14px;
+}
+.report-block h3 {
+  margin: 0 0 7px;
+  color: #4f3422;
+  font-size: 13px;
+  font-weight: 800;
+}
+.report-block ul {
+  margin: 0;
+  padding-left: 17px;
+}
+.report-block li {
+  margin: 5px 0;
+  color: #4b382d;
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+.report-block strong {
+  font-weight: 800;
 }
 
 </style>
@@ -1391,6 +1499,17 @@ body,
       <div class="today-date" id="todayBasis">-</div>
     </div>
     <div id="todayContent"></div>
+  </div>
+</div>
+
+<!-- ── 매니저 리포트 뷰 ── -->
+<div class="view" id="view-report">
+  <div class="manager-report-section">
+    <div class="report-head">
+      <button class="report-back" onclick="switchView('today')">← 오늘체크로</button>
+      <div class="report-title-line">💬 매출 데이터를 MD 관점으로 해석해 모아둔 게시판입니다.</div>
+    </div>
+    <div id="managerReportBoard" class="report-board"></div>
   </div>
 </div>
 
@@ -1717,7 +1836,7 @@ DAILY.forEach(d =>{ dailyMap[d.d] = d; }
 // ══ 뷰 전환 ══
 let currentView = 'today';
 function switchView(v){
-  ['today','sales','reorder','excel','chat'].forEach(id => {
+  ['today','report','sales','reorder','excel','chat'].forEach(id => {
     const el = document.getElementById('view-' + id);
     if (el) el.classList.remove('active');
   });
@@ -1729,6 +1848,7 @@ function switchView(v){
   if (btn) btn.classList.add('active');
   currentView = v;
   if (v === 'today') renderTodayCheck();
+  if (v === 'report') renderManagerReports();
   if (v === 'chat') initChatTab();
 }
 // ══ 매출 트래커 ══
@@ -1893,6 +2013,87 @@ function todayGapPreviewHtml(gaps){
     </div>`).join('') : '<div class="today-empty">지점 차이 신호가 없습니다.</div>';
   return todayToggleCard('지점 차이 신호', '이번 달 · 한 지점 3개+ / 반대 지점 0개', `<div class="today-mini-list">${body}</div>`);
 }
+
+const MANAGER_REPORTS = [
+  {
+    id: '2026-05-30-md-risk',
+    date: '2026-05-30',
+    title: '매니저 리포트',
+    summary: '포켓몬카드 공백을 문구/완구 체력 회복으로 방어해야 합니다.',
+    sections: [
+      {
+        title: '핵심 요약',
+        items: [
+          '5월 누적 매출은 30,862,600원으로 4월 21,114,700원보다 크지만, 최근 7일은 전주 대비 14.0% 하락했습니다.',
+          '최근 하락의 가장 큰 원인은 포켓몬카드입니다. 최근 7일 포켓몬카드는 전주 대비 26.1% 감소했습니다.',
+          '2호점은 5월 매출 19,181,000원으로 핵심 매장이지만, 최근 7일 하락폭도 15.7%로 더 큽니다.',
+          '아이스크림은 5월 전체로는 강하지만 최근 7일은 10.0% 감소했습니다. 날씨 회복 시 재반등을 봐야 합니다.',
+          '문구/완구는 4월 8,830,800원에서 5월 8,008,300원으로 약해졌습니다. 가장 먼저 관리해야 할 카테고리입니다.'
+        ]
+      },
+      {
+        title: '발견한 인사이트',
+        items: [
+          '5월이 좋아 보이는 이유는 포켓몬카드 10,827,500원, 아이스크림 7,033,000원이 크게 받쳐줬기 때문입니다.',
+          '최근 7일 매출은 7,245,400원, 직전 7일은 8,424,600원으로 1,179,200원 감소했습니다.',
+          '포켓몬카드만 직전 7일 3,329,000원에서 최근 7일 2,459,500원으로 869,500원 감소했습니다.',
+          '과자 흐름은 5월 29일 일회성 구매 영향이 있어 추세 판단을 보류하고, 음료는 최근 7일 5.2% 증가해 작은 보조축으로 볼 수 있습니다.'
+        ]
+      },
+      {
+        title: '위험 신호',
+        items: [
+          '5월 전체 매출의 약 35%가 포켓몬카드입니다. 수급이 막히면 하루 매출 감정선까지 같이 흔들리는 구조입니다.',
+          '4월에 3개 이상 팔렸는데 5월에 0개인 문구/완구가 많습니다. 품절, 단종, 진열 빠짐, 위치 문제를 의심해야 합니다.',
+          '유희왕카드 버스트프로토콜, 원피스카드류, 말랑이/스퀴시류는 우선 현장 확인 대상입니다.',
+          '5월 29일 진열 변경 상품군은 하루 반응만으로 판단하기 어렵습니다. 주말 포함 2~3일 더 추적해야 합니다.'
+        ]
+      },
+      {
+        title: '바로 할 일',
+        items: [
+          '포켓몬카드 대체 매출판을 만듭니다. 후보는 아이스크림, 과자, 음료, 유희왕/원피스카드, 티니핑/스티커, 물총/버블건입니다.',
+          '문구/완구 끊긴 상품을 현장에서 확인합니다. 재고가 있는데 안 팔리면 위치 문제, 없으면 발주/단종 문제입니다.',
+          '2호점 진열 테스트 상품군을 5월 29일~31일 기준으로 추적합니다.',
+          '날씨 좋은 날에는 아이스크림/음료/과자를 묶어 객단가를 올릴 수 있게 전면 관리합니다.',
+          'POP는 강아지간식, 랜덤뽑기, 슬라임, 물총/버블건, 키우기 키트처럼 설명이 필요한 상품부터 붙입니다.'
+        ]
+      }
+    ]
+  }
+];
+
+function reportDateLabel(dateStr){
+  return todayKoreanDate(dateStr);
+}
+function managerReportEntryHtml(){
+  const r = MANAGER_REPORTS[0];
+  if (!r) return '';
+  return `<button class="manager-report-entry" onclick="switchView('report')">
+    <div class="eyebrow">${todayEscape(r.title)} (${todayEscape(reportDateLabel(r.date))})</div>
+    <div class="summary">${todayEscape(r.summary)}</div>
+  </button>`;
+}
+function reportDetailHtml(report){
+  return `<div class="report-detail">
+    <div class="report-detail-title">${todayEscape(report.title)}</div>
+    <div class="report-detail-date">${todayEscape(reportDateLabel(report.date))}</div>
+    ${report.sections.map(sec => `<div class="report-block">
+      <h3>${todayEscape(sec.title)}</h3>
+      <ul>${sec.items.map(item => `<li>${todayEscape(item)}</li>`).join('')}</ul>
+    </div>`).join('')}
+  </div>`;
+}
+function renderManagerReports(selectedId){
+  const box = document.getElementById('managerReportBoard');
+  if (!box) return;
+  const selected = MANAGER_REPORTS.find(r => r.id === selectedId) || MANAGER_REPORTS[0];
+  const list = MANAGER_REPORTS.map(r => `<button class="report-list-card ${r.id === selected.id ? 'active' : ''}" onclick="renderManagerReports('${todayEscape(r.id)}')">
+    <div class="eyebrow">${todayEscape(r.title)} (${todayEscape(reportDateLabel(r.date))})</div>
+    <div class="summary">${todayEscape(r.summary)}</div>
+  </button>`).join('');
+  box.innerHTML = `<div class="report-list">${list}</div>${reportDetailHtml(selected)}`;
+}
 function renderTodayCheck(){
   const box = document.getElementById('todayContent');
   const basis = document.getElementById('todayBasis');
@@ -1924,6 +2125,7 @@ function renderTodayCheck(){
   const actionHtml = todayActionSummaryHtml(actionSummary, alerts);
   const gapHtml = todayGapPreviewHtml(actionSummary.gaps);
   box.innerHTML = `<div class="today-grid">
+    ${managerReportEntryHtml()}
     ${actionHtml}
     <div class="today-top-grid">
       <div class="today-card compact">
