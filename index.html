@@ -761,7 +761,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 .chat-suggest-card:active { transform:scale(0.98); }
 .chat-template { margin-top:10px; background:#fffdf9; border:1px solid #f3dfc7; border-radius:14px; padding:10px;
   box-shadow:0 3px 0 rgba(236,196,129,.16), 0 8px 18px rgba(116,81,45,.04); }
-.chat-template-tabs { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; }
+.chat-template-tabs { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; }
 .chat-template-tab { border:1px solid #ead7c0; background:#fffaf2; color:#745845; border-radius:999px; padding:8px 6px;
   font-size:12px; font-weight:550; cursor:pointer; }
 .chat-template-tab.active { background:#4f3422; border-color:#4f3422; color:#fff; }
@@ -1447,6 +1447,82 @@ body,
 .report-block strong {
   font-weight: 800;
 }
+.chat-template-tabs {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+.chat-template-tab {
+  min-width: 0;
+  white-space: nowrap;
+}
+.today-sales-table-card {
+  border: 1px solid #ead9c4;
+  background: #fffaf2;
+  border-radius: 12px;
+  padding: 11px;
+  box-shadow: 0 4px 12px rgba(79, 52, 34, .06);
+}
+.today-sales-table-card .title {
+  color: #3f2d22;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.today-sales-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.today-sales-table th,
+.today-sales-table td {
+  padding: 7px 4px;
+  border-top: 1px solid #f0ddc8;
+  color: #4b382d;
+  font-size: 11.5px;
+  line-height: 1.25;
+  text-align: right;
+  vertical-align: middle;
+}
+.today-sales-table th {
+  color: #8a654f;
+  font-weight: 700;
+}
+.today-sales-table th:first-child,
+.today-sales-table td:first-child {
+  text-align: left;
+  font-weight: 700;
+  color: #4f3422;
+}
+.today-sales-table tr.total td {
+  font-weight: 800;
+  color: #2f2119;
+  background: rgba(255,255,255,.42);
+}
+@media (max-width: 420px) {
+  .today-sales-table-card {
+    padding: 9px;
+  }
+  .today-sales-table th,
+  .today-sales-table td {
+    font-size: 10.5px;
+    padding: 6px 3px;
+  }
+}
+@media (max-width: 420px) {
+  .chat-template-tabs {
+    display: flex !important;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .chat-template-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .chat-template-tab {
+    flex: 0 0 auto;
+    min-width: 74px;
+  }
+}
 
 </style>
 </head>
@@ -2014,6 +2090,57 @@ function todayGapPreviewHtml(gaps){
     </div>`).join('') : '<div class="today-empty">지점 차이 신호가 없습니다.</div>';
   return todayToggleCard('지점 차이 신호', '이번 달 · 한 지점 3개+ / 반대 지점 0개', `<div class="today-mini-list">${body}</div>`);
 }
+function todaySalesBucket(name){
+  const p = productInfo(name);
+  const cat = p.cat || '';
+  if (isPokemonCardItem(name)) return 'pokemon';
+  if (cat === '아이스크림') return 'icecream';
+  if (cat === '과자' || cat === '음료') return 'snackDrink';
+  return 'stationery';
+}
+function todaySalesByStore(date, storeKey){
+  const src = storeKey === 's1' ? DAILY_ITEMS_S1 : DAILY_ITEMS_S2;
+  const out = {
+    stationery: 0,
+    snackDrink: 0,
+    icecream: 0,
+    pokemon: 0,
+    total: 0
+  };
+  (src[date] || []).forEach(item => {
+    const sales = Number(item.s || 0);
+    out[todaySalesBucket(item.n)] += sales;
+    out.total += sales;
+  });
+  return out;
+}
+function todaySalesTableHtml(date){
+  const s1 = todaySalesByStore(date, 's1');
+  const s2 = todaySalesByStore(date, 's2');
+  const rows = [
+    { key: 'stationery', label: '문구' },
+    { key: 'snackDrink', label: '과자+음료' },
+    { key: 'icecream', label: '아이스크림' },
+    { key: 'pokemon', label: '포켓몬카드' },
+    { key: 'total', label: '합계', total: true },
+  ];
+  const body = rows.map(r => {
+    const all = s1[r.key] + s2[r.key];
+    return `<tr class="${r.total ? 'total' : ''}">
+      <td>${todayEscape(r.label)}</td>
+      <td>${fmtFull(s1[r.key])}</td>
+      <td>${fmtFull(s2[r.key])}</td>
+      <td>${fmtFull(all)}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="today-sales-table-card">
+    <div class="title">어제 매출</div>
+    <table class="today-sales-table">
+      <thead><tr><th>구분</th><th>1호점</th><th>2호점</th><th>전체</th></tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+  </div>`;
+}
 
 const MANAGER_REPORTS = [
   {
@@ -2128,20 +2255,7 @@ function renderTodayCheck(){
   box.innerHTML = `<div class="today-grid">
     ${managerReportEntryHtml()}
     ${actionHtml}
-    <div class="today-top-grid">
-      <div class="today-card compact">
-        <div class="today-card-title">어제 매출</div>
-        <div class="today-main-value">${fmtFull(row.s1 + row.s2)}</div>
-        <div class="today-metric-row"><span class="k">1호점</span><span class="v">${fmtFull(row.s1)}</span></div>
-        <div class="today-metric-row"><span class="k">2호점</span><span class="v">${fmtFull(row.s2)}</span></div>
-      </div>
-      <div class="today-card compact">
-        <div class="today-card-title">포켓몬카드</div>
-        <div class="today-main-value">${fmtFull(pokemon.single.s + pokemon.box.s)}</div>
-        <div class="today-metric-row"><span class="k">낱개</span><span class="v">${pokemon.single.q}개 · ${fmtFull(pokemon.single.s)}</span></div>
-        <div class="today-metric-row"><span class="k">박스</span><span class="v">${pokemon.box.q}개 · ${fmtFull(pokemon.box.s)}</span></div>
-      </div>
-    </div>
+    ${todaySalesTableHtml(latest)}
     ${gapHtml}
     ${todayToggleCard('눈에 띄는 상품', '포켓몬카드 제외 · 기준일 매출 베스트 10', `<div class="today-list">${topHtml}</div>`)}
     ${todayToggleCard('오늘 확인할 발주', '발주 1순위 · 미확인 최대 20개', `<div class="today-list">${orderHtml}</div>`)}
