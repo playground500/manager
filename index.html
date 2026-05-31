@@ -1700,6 +1700,7 @@ body,
           <button class="chat-template-tab active" data-template="sales">판매 확인</button>
           <button class="chat-template-tab" data-template="rank">순위 보기</button>
           <button class="chat-template-tab" data-template="stock">재고 의심</button>
+          <button class="chat-template-tab" data-template="analysis">핵심 분석</button>
         </div>
         <div class="chat-template-list" id="chatTemplateList"></div>
       </div>
@@ -4059,6 +4060,13 @@ const CHAT_TEMPLATES = {
     { label:'고단가 확인', q:'고단가 판매 상품' },
     { label:'5월 끊긴 문구', q:'문구 중에서 5월에 끊긴 상품' },
   ],
+  analysis: [
+    { label:'끊긴 문구 50개', q:'4월엔 팔렸는데 5월에 안 팔린 문구/완구 상위 50개' },
+    { label:'지점별 단독 히트', q:'2호점에서만 잘 팔리는 상품과 1호점에서만 잘 팔리는 상품' },
+    { label:'포켓몬 제외 7일', q:'포켓몬카드 제외 시 최근 7일 매출 흐름' },
+    { label:'진열 변경 반응', q:'5월 29일 진열 변경 상품군의 3일 후 반응' },
+    { label:'재고 의심 후보', q:'문구/완구 중 재고는 있는데 판매가 끊긴 상품 후보' },
+  ],
 };
 function renderChatTemplates(){
   const list = document.getElementById('chatTemplateList');
@@ -4439,6 +4447,190 @@ function subjectTotal(agg, sub){
 function periodBasis(period, store){
   const sLabel = store === 's1' ? '1호점' : (store === 's2' ? '2호점' : '전체 지점');
   return '기준: ' + period.start + ' ~ ' + period.end + ' / ' + sLabel;
+}
+
+function isPokemonNameForAnalysis(name){
+  return isPokemonCardItem(name) || /포켓몬|포카/.test(String(name || ''));
+}
+function analysisCat(name){
+  const p = PRODUCTS[name] || {};
+  if (isPokemonNameForAnalysis(name)) return '포켓몬카드';
+  if (p.cat === '아이스크림') return '아이스크림';
+  if (p.cat === '과자') return '과자';
+  if (p.cat === '음료') return '음료';
+  if (p.cat === '기타 식품류') return '기타식품';
+  return '문구/완구';
+}
+function sumAggExcluding(agg, predicate){
+  let q = 0, s = 0;
+  for (const n in agg) {
+    if (predicate && !predicate(n)) continue;
+    q += Number(agg[n].q || 0);
+    s += Number(agg[n].s || 0);
+  }
+  return { q, s };
+}
+function dayAgg(store, date){
+  return aggregate({start: date, end: date}, store || 'all');
+}
+function coreAnalysisTable(rows, valueFn){
+  if (!rows.length) return '<div class="today-empty">해당 조건의 상품이 없습니다.</div>';
+  let html = '<table>';
+  rows.forEach((r, idx) => {
+    html += '<tr><td>' + (idx + 1) + '. ' + escapeHtml(r.name);
+    if (r.meta) html += '<br><span style="font-size:12px;color:#888;">' + escapeHtml(r.meta) + '</span>';
+    html += '</td><td>' + valueFn(r) + '</td></tr>';
+  });
+  return html + '</table>';
+}
+function handleCoreStoppedStationery(q){
+  if (!/(4월|지난달).*(5월|이번\s*달).*안\s*팔|판매\s*끊|끊긴/.test(q)) return null;
+  if (!/문구|완구|재고|품절|진열/.test(q)) return null;
+  const data = (typeof STOP_CANDIDATES !== 'undefined') ? STOP_CANDIDATES : { prevMonth: '4월', currentMonth: '5월', items: [] };
+  let maxShow = 50, m;
+  if (m = q.match(/(?:상위|베스트|top)?\s*(\d+)\s*개/i)) maxShow = parseInt(m[1]);
+  const minQty = stoppedMinQtyFromQuestion(q);
+  const list = (data.items || [])
+    .filter(item => item.prevQty >= minQty)
+    .filter(item => item.cat === '문구' || item.cat === '완구' || analysisCat(item.name) === '문구/완구')
+    .sort((a,b) => b.prevQty - a.prevQty || b.prevSales - a.prevSales || a.name.localeCompare(b.name, 'ko'));
+  const shown = list.slice(0, maxShow).map(item => ({
+    name: item.name,
+    meta: data.prevMonth + ' ' + item.prevQty + '개 · 마지막 판매 ' + item.lastPrevSale,
+    q: item.prevQty,
+    s: item.prevSales
+  }));
+  let html = '<b>' + data.prevMonth + '엔 팔렸는데 ' + data.currentMonth + '에 안 팔린 문구/완구 상위 ' + Math.min(maxShow, list.length) + '개</b><br>';
+  html += '<span style="font-size:12px;color:#888;">' + data.prevMonth + ' ' + minQty + '개 이상 판매 · ' + data.currentMonth + ' 0개 · 포켓몬카드 제외</span>';
+  html += coreAnalysisTable(shown, r => r.q + '개<br>' + KRWfmt(r.s) + '원');
+  if (list.length > shown.length) html += '<br><span style="font-size:12px;color:#888;">…외 ' + (list.length - shown.length) + '개</span>';
+  return { html };
+}
+function handleCoreOneStoreOnly(q){
+  if (!/(2호점에서만|1호점에서만|한\s*지점|지점별\s*단독|매장별\s*단독)/.test(q)) return null;
+  const period = extractPeriod(q.includes('이번') || q.includes('최근') || q.includes('월') ? q : '이번 달');
+  const a1 = aggregate(period, 's1');
+  const a2 = aggregate(period, 's2');
+  const minQty = 3;
+  const only1 = [], only2 = [];
+  const names = new Set([...Object.keys(a1), ...Object.keys(a2)]);
+  names.forEach(name => {
+    if (isPokemonNameForAnalysis(name)) return;
+    const v1 = a1[name] || {q:0,s:0};
+    const v2 = a2[name] || {q:0,s:0};
+    const row = { name, cat: analysisCat(name), q1:v1.q, s1:v1.s, q2:v2.q, s2:v2.s };
+    if (v1.q >= minQty && v2.q === 0) only1.push(row);
+    if (v2.q >= minQty && v1.q === 0) only2.push(row);
+  });
+  only1.sort((a,b) => b.s1 - a.s1 || b.q1 - a.q1);
+  only2.sort((a,b) => b.s2 - a.s2 || b.q2 - a.q2);
+  const toRows = (arr, side) => arr.slice(0, 15).map(r => ({
+    name: r.name,
+    meta: r.cat + ' · 반대 지점 0개',
+    q: side === 's1' ? r.q1 : r.q2,
+    s: side === 's1' ? r.s1 : r.s2
+  }));
+  let html = '<b>' + period.label + ' 지점별 단독 히트 상품</b><br>';
+  html += '<span style="font-size:12px;color:#888;">한 지점 3개 이상 판매 · 반대 지점 0개 · 포켓몬카드 제외</span><br><br>';
+  html += '<b>1호점에서만 팔린 상품</b>' + coreAnalysisTable(toRows(only1, 's1'), r => r.q + '개<br>' + KRWfmt(r.s) + '원');
+  html += '<br><b>2호점에서만 팔린 상품</b>' + coreAnalysisTable(toRows(only2, 's2'), r => r.q + '개<br>' + KRWfmt(r.s) + '원');
+  return { html };
+}
+function handleCoreNoPokemonFlow(q){
+  if (!/포켓몬카드?\s*제외|포켓몬\s*제외|포카\s*제외/.test(q) || !/최근\s*7일|7일|흐름|추이/.test(q)) return null;
+  const end = latestDataDate();
+  const start = addDays(end, -6);
+  const prevStart = addDays(start, -7);
+  const prevEnd = addDays(start, -1);
+  const rows = [];
+  let total = 0, totalQ = 0, prevTotal = 0;
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    const t = sumAggExcluding(dayAgg('all', d), name => !isPokemonNameForAnalysis(name));
+    rows.push({ name: todayKoreanDate(d), meta: d, q: t.q, s: t.s });
+    total += t.s; totalQ += t.q;
+  }
+  for (let d = prevStart; d <= prevEnd; d = addDays(d, 1)) {
+    prevTotal += sumAggExcluding(dayAgg('all', d), name => !isPokemonNameForAnalysis(name)).s;
+  }
+  const diff = total - prevTotal;
+  const rate = prevTotal ? Math.round(Math.abs(diff) / prevTotal * 100) : 0;
+  const word = diff > 0 ? '증가' : diff < 0 ? '감소' : '동일';
+  let html = '<b>포켓몬카드 제외 최근 7일 매출 흐름</b><br>';
+  html += '<span style="font-size:12px;color:#888;">' + start + ' ~ ' + end + ' · 총 ' + totalQ + '개 / ' + KRWfmt(total) + '원</span><br>';
+  html += '<div style="margin:8px 0;font-size:13px;">직전 7일 대비 <b>' + KRWfmt(Math.abs(diff)) + '원 ' + word + '</b>' + (prevTotal ? ' (' + rate + '%)' : '') + '</div>';
+  html += coreAnalysisTable(rows, r => r.q + '개<br>' + KRWfmt(r.s) + '원');
+  return { html };
+}
+const MD_ACTION_GROUPS = [
+  { label:'물총', match:n => /물총/.test(n) },
+  { label:'유희왕카드', match:n => /유희왕/.test(n) },
+  { label:'강아지간식', match:n => /강아지|애견|반려견|개껌|덴탈|펫/.test(n) },
+  { label:'티니핑/스티커/미취학', match:n => /티니핑|스티커|색칠|공주|반지|스탬프/.test(n) },
+  { label:'편지지/카드류', match:n => /편지|봉투|카드류|축하카드/.test(n) },
+  { label:'줄넘기', match:n => /줄넘기/.test(n) },
+  { label:'키우기 키트', match:n => /마리모|새우|키우기/.test(n) },
+];
+function groupSumForPeriod(group, start, end, store){
+  const agg = aggregate({start, end}, store || 's2');
+  let q = 0, s = 0;
+  for (const n in agg) {
+    if (isPokemonNameForAnalysis(n) && group.label !== '유희왕카드') continue;
+    if (!group.match(n)) continue;
+    q += agg[n].q; s += agg[n].s;
+  }
+  return { q, s };
+}
+function handleCoreActionImpact(q){
+  if (!/진열\s*변경|진열.*반응|5월\s*29일.*반응|청소|재정비/.test(q)) return null;
+  const actionDate = '2026-05-29';
+  const latest = latestDataDate();
+  const afterEnd = latest < addDays(actionDate, 2) ? latest : addDays(actionDate, 2);
+  const beforeStart = addDays(actionDate, -6);
+  const beforeEnd = addDays(actionDate, -1);
+  const afterDays = Math.max(1, Math.round((new Date(afterEnd) - new Date(actionDate)) / 86400000) + 1);
+  const rows = MD_ACTION_GROUPS.map(g => {
+    const before = groupSumForPeriod(g, beforeStart, beforeEnd, 's2');
+    const after = groupSumForPeriod(g, actionDate, afterEnd, 's2');
+    return {
+      name: g.label,
+      meta: '2호점 · 이전 6일 일평균 대비 · 비교 가능 기간 ' + actionDate + ' ~ ' + afterEnd,
+      beforeAvg: Math.round(before.s / 6),
+      afterAvg: Math.round(after.s / afterDays),
+      q: after.q,
+      s: after.s
+    };
+  });
+  let html = '<b>5월 29일 2호점 진열 변경 상품군 반응</b><br>';
+  html += '<span style="font-size:12px;color:#888;">운영 메모 기준 · 데이터는 현재 ' + latest + '까지 반영됨</span>';
+  html += coreAnalysisTable(rows, r => '이후 ' + r.q + '개<br>' + KRWfmt(r.s) + '원<br><span style="font-size:12px;color:#888;">전 평균 ' + KRWfmt(r.beforeAvg) + '원 / 후 평균 ' + KRWfmt(r.afterAvg) + '원</span>');
+  if (latest < addDays(actionDate, 2)) html += '<br><span style="font-size:12px;color:#888;">아직 3일치가 모두 들어오지 않아 임시 판정입니다.</span>';
+  return { html };
+}
+function handleCoreStockOnHandStopped(q){
+  if (!/재고.*있|재고는.*판매|판매가\s*끊긴.*후보|진열빠짐|품절/.test(q) || !/문구|완구/.test(q)) return null;
+  const data = (typeof STOP_CANDIDATES !== 'undefined') ? STOP_CANDIDATES : { prevMonth: '4월', currentMonth: '5월', items: [] };
+  const list = (data.items || [])
+    .filter(item => item.prevQty >= 3)
+    .filter(item => item.cat === '문구' || item.cat === '완구' || analysisCat(item.name) === '문구/완구')
+    .sort((a,b) => b.prevQty - a.prevQty || b.prevSales - a.prevSales)
+    .slice(0, 30)
+    .map(item => ({
+      name: item.name,
+      meta: data.prevMonth + ' ' + item.prevQty + '개 판매 · 마지막 판매 ' + item.lastPrevSale,
+      q: item.prevQty,
+      s: item.prevSales
+    }));
+  let html = '<b>문구/완구 중 재고/진열 확인 후보</b><br>';
+  html += '<span style="font-size:12px;color:#888;">실제 재고 데이터는 없어서, ' + data.prevMonth + ' 3개 이상 판매 후 ' + data.currentMonth + ' 0개인 상품을 후보로 봅니다.</span>';
+  html += coreAnalysisTable(list, r => r.q + '개<br>' + KRWfmt(r.s) + '원');
+  return { html };
+}
+function handleCoreAnalysis(q){
+  return handleCoreStockOnHandStopped(q)
+    || handleCoreStoppedStationery(q)
+    || handleCoreOneStoreOnly(q)
+    || handleCoreNoPokemonFlow(q)
+    || handleCoreActionImpact(q);
 }
 
 function pokemonQtyAnswer(period, store, sLabel, agg, sub, q){
@@ -4914,6 +5106,7 @@ function handleAggregate(q){
 
 function handleChatQuery(q){
   let r;
+  if (r = handleCoreAnalysis(q)) return r;
   if (r = handleSalesDetail(q)) return r;
   if (r = handleLastSale(q)) return r;
   if (r = handleStoppedSales(q)) return r;
