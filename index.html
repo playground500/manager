@@ -1344,7 +1344,7 @@ body,
   border: 1px solid #ead9c4;
   background: #fffaf2;
   border-radius: 12px;
-  padding: 11px 13px;
+  padding: 8px 10px;
   text-align: left;
   width: 100%;
   box-shadow: 0 4px 12px rgba(79, 52, 34, .06);
@@ -1356,15 +1356,17 @@ body,
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
+  text-align: left;
 }
 .manager-report-entry .summary,
 .report-list-card .summary {
-  margin-top: 4px;
+  margin-top: 3px;
   color: #3f2d22;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   line-height: 1.35;
   word-break: keep-all;
+  text-align: left;
 }
 .manager-report-section {
   padding: 0 14px 20px;
@@ -1453,6 +1455,44 @@ body,
 .chat-template-tab {
   min-width: 0;
   white-space: nowrap;
+}
+.today-toggle-card {
+  background: #fffaf2 !important;
+  border: 1px solid #ead9c4 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 12px rgba(79, 52, 34, .06) !important;
+}
+.today-toggle-card summary {
+  padding: 8px 10px !important;
+}
+.today-toggle-card .today-toggle-body {
+  padding: 0 10px 9px !important;
+}
+.today-toggle-card .today-card-title {
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  margin-bottom: 0 !important;
+}
+.today-toggle-card .today-title-hint {
+  font-size: 10px !important;
+  font-weight: 450 !important;
+}
+.today-toggle-card .today-card-title-row {
+  margin-bottom: 0 !important;
+}
+.today-toggle-card summary:after {
+  font-size: 10px !important;
+  padding: 3px 7px !important;
+}
+.today-toggle-card .today-list-row,
+.today-toggle-card .today-mini-row,
+.today-toggle-card .today-alert,
+.today-toggle-card .today-criteria-row {
+  font-size: 10.5px !important;
+}
+.today-toggle-card .today-list-row .name,
+.today-toggle-card .today-mini-row .name {
+  font-weight: 500 !important;
 }
 .today-sales-table-card {
   border: 1px solid #ead9c4;
@@ -2087,8 +2127,8 @@ function todayGapPreviewHtml(gaps){
     <div class="today-mini-row">
       <div class="name">${idx+1}. ${todayEscape(item.name)}<div class="meta">${todayEscape(item.from)} ${item.qty}개 · ${todayEscape(item.missing)} 0개</div></div>
       <div class="value">${item.qty}개</div>
-    </div>`).join('') : '<div class="today-empty">지점 차이 신호가 없습니다.</div>';
-  return todayToggleCard('지점 차이 신호', '이번 달 · 한 지점 3개+ / 반대 지점 0개', `<div class="today-mini-list">${body}</div>`);
+    </div>`).join('') : '<div class="today-empty">한 쪽에서만 많이 팔린 상품이 없습니다.</div>';
+  return todayToggleCard('한 쪽에서만 많이 팔린 상품', '이번 달 · 한 지점 3개+ / 반대 지점 0개', `<div class="today-mini-list">${body}</div>`);
 }
 function todaySalesBucket(name){
   const p = productInfo(name);
@@ -2254,8 +2294,8 @@ function renderTodayCheck(){
   const gapHtml = todayGapPreviewHtml(actionSummary.gaps);
   box.innerHTML = `<div class="today-grid">
     ${managerReportEntryHtml()}
-    ${actionHtml}
     ${todaySalesTableHtml(latest)}
+    ${actionHtml}
     ${gapHtml}
     ${todayToggleCard('눈에 띄는 상품', '포켓몬카드 제외 · 기준일 매출 베스트 10', `<div class="today-list">${topHtml}</div>`)}
     ${todayToggleCard('오늘 확인할 발주', '발주 1순위 · 미확인 최대 20개', `<div class="today-list">${orderHtml}</div>`)}
