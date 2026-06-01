@@ -2831,30 +2831,63 @@ grid.innerHTML = html;
   document.getElementById('calTotal').textContent = fmtFull(monthTotal);
 }
 
+let dayDetailStore = 'all';
+let dayDetailDate = '';
+
+function dayDetailItems(ds, store){
+  if (store === 's1') return (DAILY_ITEMS_S1 && DAILY_ITEMS_S1[ds]) || [];
+  if (store === 's2') return (DAILY_ITEMS_S2 && DAILY_ITEMS_S2[ds]) || [];
+  return (DAILY_ITEMS && DAILY_ITEMS[ds]) || [];
+}
+function dayDetailStoreSales(row, store){
+  if (store === 's1') return row.s1 || 0;
+  if (store === 's2') return row.s2 || 0;
+  return (row.s1 || 0) + (row.s2 || 0);
+}
+function dayDetailStoreLabel(store){
+  if (store === 's1') return '1호점';
+  if (store === 's2') return '2호점';
+  return '합산';
+}
+function renderDayDetailItems(){
+  const list = document.getElementById('dayDetailItems');
+  const title = document.getElementById('dayDetailListTitle');
+  if (!list || !title || !dayDetailDate) return;
+  const items = dayDetailItems(dayDetailDate, dayDetailStore);
+  const row = dailyMap[dayDetailDate] || {s1:0, s2:0};
+  const total = dayDetailStoreSales(row, dayDetailStore);
+  title.textContent = dayDetailStoreLabel(dayDetailStore) + ' 상품별 판매 · ' + fmtFull(total);
+  document.querySelectorAll('.day-detail-store-btn').forEach(btn => {
+    const active = btn.getAttribute('data-store') === dayDetailStore;
+    btn.style.background = active ? '#4f3422' : '#fffaf2';
+    btn.style.color = active ? '#fff' : '#4f3422';
+    btn.style.borderColor = active ? '#4f3422' : '#ead9c4';
+  });
+  if (!items.length) {
+    list.innerHTML = '<div style="padding:12px 0;color:#94a3b8;font-size:12px;">판매 상품이 없습니다.</div>';
+    return;
+  }
+  const sorted = [...items].sort((a,b) => (b.s||0)-(a.s||0) || (b.q||0)-(a.q||0));
+  list.innerHTML = sorted.map(it => {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9;">'
+      + '<span style="font-size:12px;color:#1e293b;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + todayEscape(it.n) + '</span>'
+      + '<span style="font-size:12px;font-weight:600;color:#4f3422;flex-shrink:0;text-align:right;">' + (it.q||0) + '개<br><span style="font-size:11px;color:#8a654f;">' + fmtFull(it.s||0) + '</span></span>'
+      + '</div>';
+  }).join('');
+}
+function setDayDetailStore(store){
+  dayDetailStore = store || 'all';
+  renderDayDetailItems();
+}
+
 function showDayDetail(ds){
   const row = dailyMap[ds];
   if (!row) return;
   const s1 = row.s1 || 0, s2 = row.s2 || 0, total = s1 + s2;
   if (total === 0) return;
+  dayDetailDate = ds;
+  dayDetailStore = 'all';
   const dateStr = ds.slice(2).replace(/-/g,'.');
-
-  // 상품 리스트 (DAILY_ITEMS에서)
-  const items = (DAILY_ITEMS && DAILY_ITEMS[ds]) || [];
-  let itemsHtml = '';
-  if (items.length > 0) {
-    const sorted = [...items].sort((a,b) => (b.q||0)-(a.q||0));
-    itemsHtml = '<div style="margin-top:14px;border-top:1px solid #e2e8f0;padding-top:12px;">'
-      + '<div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:8px;letter-spacing:0.5px;">상품별 판매</div>'
-      + '<div style="max-height:240px;overflow-y:auto;">'
-      + sorted.map(it => {
-          const price = it.s ? fmtFull(it.s) : '';
-          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f1f5f9;">'
-            + '<span style="font-size:12px;color:#1e293b;flex:1;margin-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + it.n + '</span>'
-            + '<span style="font-size:13px;font-weight:600;color:#4f3422;flex-shrink:0;">' + (it.q||0) + '개</span>'
-            + '</div>';
-        }).join('')
-      + '</div></div>';
-  }
 
   const overlay = document.createElement('div');
   overlay.id = 'dayDetailOverlay';
@@ -2865,20 +2898,18 @@ function showDayDetail(ds){
     + '<div style="font-size:17px;font-weight:700;color:#1e293b;">📅 ' + dateStr + ' 매출</div>'
     + '<button onclick="closeDayDetail()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;">×</button>'
     + '</div>'
-    + '<div style="display:flex;flex-direction:column;gap:8px;">'
-    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f0fdf4;border-radius:10px;">'
-    + '<span style="font-size:13px;font-weight:600;color:#745845;">🏪 1호점</span>'
-    + '<span style="font-size:14px;font-weight:700;color:#1e293b;">' + (s1>0?fmtFull(s1):'기록 없음') + '</span></div>'
-    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#eff6ff;border-radius:10px;">'
-    + '<span style="font-size:13px;font-weight:600;color:#4a90d9;">🏪 2호점</span>'
-    + '<span style="font-size:14px;font-weight:700;color:#1e293b;">' + (s2>0?fmtFull(s2):'기록 없음') + '</span></div>'
-    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#4f3422;border-radius:10px;">'
-    + '<span style="font-size:13px;font-weight:600;color:#fff;">💰 합산</span>'
-    + '<span style="font-size:16px;font-weight:800;color:#fff;">' + fmtFull(total) + '</span></div>'
+    + '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;">'
+    + '<button class="day-detail-store-btn" data-store="s1" onclick="setDayDetailStore(\'s1\')" style="border:1px solid #ead9c4;border-radius:10px;padding:8px 5px;background:#fffaf2;color:#4f3422;font-size:11px;font-weight:700;cursor:pointer;">1호점<br><span style="font-size:10px;font-weight:500;">' + (s1>0?fmtFull(s1):'기록 없음') + '</span></button>'
+    + '<button class="day-detail-store-btn" data-store="s2" onclick="setDayDetailStore(\'s2\')" style="border:1px solid #ead9c4;border-radius:10px;padding:8px 5px;background:#fffaf2;color:#4f3422;font-size:11px;font-weight:700;cursor:pointer;">2호점<br><span style="font-size:10px;font-weight:500;">' + (s2>0?fmtFull(s2):'기록 없음') + '</span></button>'
+    + '<button class="day-detail-store-btn" data-store="all" onclick="setDayDetailStore(\'all\')" style="border:1px solid #ead9c4;border-radius:10px;padding:8px 5px;background:#4f3422;color:#fff;font-size:11px;font-weight:700;cursor:pointer;">합산<br><span style="font-size:10px;font-weight:500;">' + fmtFull(total) + '</span></button>'
     + '</div>'
-    + itemsHtml
+    + '<div style="margin-top:14px;border-top:1px solid #e2e8f0;padding-top:12px;">'
+    + '<div id="dayDetailListTitle" style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:8px;letter-spacing:0.5px;">상품별 판매</div>'
+    + '<div id="dayDetailItems" style="max-height:260px;overflow-y:auto;"></div>'
+    + '</div>'
     + '</div>';
   document.body.appendChild(overlay);
+  renderDayDetailItems();
 }
 
 
