@@ -1368,6 +1368,126 @@ body,
   word-break: keep-all;
   text-align: left;
 }
+.today-memo-card {
+  border: 1px solid #ead9c4;
+  background: #fffaf2;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 12px rgba(79, 52, 34, .06);
+}
+.today-memo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.today-memo-title {
+  color: #3f2d22;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+.today-memo-sub {
+  margin-top: 2px;
+  color: #8a654f;
+  font-size: 10.5px;
+  font-weight: 400;
+}
+.today-memo-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  gap: 6px;
+}
+.today-memo-input {
+  min-width: 0;
+  height: 34px;
+  border: 1px solid #ead9c4;
+  border-radius: 9px;
+  background: #fffdf8;
+  color: #3f2d22;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0 10px;
+  outline: none;
+}
+.today-memo-input:focus {
+  border-color: #d3b28d;
+  box-shadow: 0 0 0 2px rgba(211, 178, 141, .18);
+}
+.today-memo-add,
+.memo-chip,
+.memo-delete,
+.memo-check {
+  border: 1px solid #ead9c4;
+  background: #fff7e8;
+  color: #4f3422;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.today-memo-add {
+  height: 34px;
+}
+.today-memo-list {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+}
+.today-memo-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 42px 38px;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 0;
+  border-top: 1px solid #f0ddc8;
+}
+.today-memo-row:first-child {
+  border-top: 0;
+}
+.memo-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  padding: 0;
+}
+.memo-text {
+  color: #4b382d;
+  font-size: 12px;
+  font-weight: 450;
+  line-height: 1.28;
+  word-break: keep-all;
+}
+.today-memo-row.done .memo-text {
+  color: #9b8a7c;
+  text-decoration: line-through;
+}
+.today-memo-row.important .memo-text {
+  color: #c0392b;
+  font-weight: 650;
+}
+.today-memo-row.important .memo-chip {
+  border-color: #efc1b9;
+  background: #fff0ed;
+  color: #b63024;
+}
+.memo-chip,
+.memo-delete {
+  height: 24px;
+  padding: 0 6px;
+}
+.memo-delete {
+  background: transparent;
+  color: #8a654f;
+}
+.today-memo-empty {
+  margin-top: 8px;
+  color: #8a654f;
+  font-size: 11px;
+  font-weight: 400;
+}
 .manager-report-section {
   padding: 0 14px 20px;
 }
@@ -2559,6 +2679,63 @@ function renderManagerReports(selectedId){
     <div class="report-board-body">${list}</div>
   </section>${reportDetailHtml(selected)}`;
 }
+const TODAY_MEMO_KEY = 'playground_today_memos_v1';
+function todayMemoItems(){
+  try {
+    return JSON.parse(localStorage.getItem(TODAY_MEMO_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+function saveTodayMemoItems(items){
+  localStorage.setItem(TODAY_MEMO_KEY, JSON.stringify(items));
+}
+function addTodayMemo(){
+  const input = document.getElementById('todayMemoInput');
+  const text = input ? input.value.trim() : '';
+  if (!text) return;
+  const items = todayMemoItems();
+  items.unshift({ id: Date.now(), text, done: false, important: false, createdAt: localDateStr(new Date()) });
+  saveTodayMemoItems(items);
+  input.value = '';
+  renderTodayMemoList();
+}
+function toggleTodayMemo(id, field){
+  const items = todayMemoItems().map(item => item.id === id ? {...item, [field]: !item[field]} : item);
+  saveTodayMemoItems(items);
+  renderTodayMemoList();
+}
+function deleteTodayMemo(id){
+  const items = todayMemoItems().filter(item => item.id !== id);
+  saveTodayMemoItems(items);
+  renderTodayMemoList();
+}
+function renderTodayMemoList(){
+  const list = document.getElementById('todayMemoList');
+  if (!list) return;
+  const items = todayMemoItems();
+  list.innerHTML = items.length ? items.map(item => `<div class="today-memo-row ${item.done ? 'done' : ''} ${item.important ? 'important' : ''}">
+    <button class="memo-check" onclick="toggleTodayMemo(${item.id}, 'done')" aria-label="완료">${item.done ? '✓' : ''}</button>
+    <div class="memo-text">${todayEscape(item.text)}</div>
+    <button class="memo-chip" onclick="toggleTodayMemo(${item.id}, 'important')">중요</button>
+    <button class="memo-delete" onclick="deleteTodayMemo(${item.id})">삭제</button>
+  </div>`).join('') : '<div class="today-memo-empty">놓치기 싫은 운영 포인트를 적어두세요.</div>';
+}
+function todayMemoHtml(){
+  return `<section class="today-memo-card">
+    <div class="today-memo-head">
+      <div>
+        <div class="today-memo-title">운영 메모</div>
+        <div class="today-memo-sub">이 브라우저에만 저장됩니다.</div>
+      </div>
+    </div>
+    <div class="today-memo-input-row">
+      <input id="todayMemoInput" class="today-memo-input" type="text" placeholder="예: 리코더 2개 판매, 진열 확인" onkeydown="if(event.key==='Enter') addTodayMemo()">
+      <button class="today-memo-add" onclick="addTodayMemo()">추가</button>
+    </div>
+    <div id="todayMemoList" class="today-memo-list"></div>
+  </section>`;
+}
 function renderTodayCheck(){
   const box = document.getElementById('todayContent');
   const basis = document.getElementById('todayBasis');
@@ -2569,8 +2746,10 @@ function renderTodayCheck(){
   if (latest !== expected) {
     box.innerHTML = `<div class="today-grid">
       ${managerReportEntryHtml()}
+      ${todayMemoHtml()}
       <div class="update-needed">매출 업데이트가 필요합니다.<div class="sub">마지막으로 업데이트된 날짜는 ${todayKoreanDate(latest)}입니다.</div></div>
     </div>`;
+    renderTodayMemoList();
     return;
   }
   const row = dailyMap[latest] || {s1:0, s2:0};
@@ -2594,6 +2773,7 @@ function renderTodayCheck(){
   const gapHtml = todayGapPreviewHtml(actionSummary.gaps);
   box.innerHTML = `<div class="today-grid">
     ${managerReportEntryHtml()}
+    ${todayMemoHtml()}
     ${todaySalesTableHtml(latest)}
     ${actionHtml}
     ${gapHtml}
@@ -2601,6 +2781,7 @@ function renderTodayCheck(){
     ${todayToggleCard('오늘 확인할 발주', '발주 1순위 · 미확인 최대 20개', `<div class="today-list">${orderHtml}</div>`)}
     ${todayToggleCard('이상 신호', '기준별 정상 여부 확인', `<div class="today-alerts">${alertHtml}</div><div class="today-criteria">${criteriaHtml}</div>`)}
   </div>`;
+  renderTodayMemoList();
 }
 let calYear, calMonth, calStore = 'both';
 let categoryTrendOpen = false;
