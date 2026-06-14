@@ -3225,11 +3225,13 @@ function dayDetailStoreLabel(store){
 function renderDayDetailItems(){
   const list = document.getElementById('dayDetailItems');
   const title = document.getElementById('dayDetailListTitle');
+  const categoryBox = document.getElementById('dayDetailCategoryTable');
   if (!list || !title || !dayDetailDate) return;
   const items = dayDetailItems(dayDetailDate, dayDetailStore);
   const row = dailyMap[dayDetailDate] || {s1:0, s2:0};
   const total = dayDetailStoreSales(row, dayDetailStore);
   title.textContent = dayDetailStoreLabel(dayDetailStore) + ' 상품별 판매 · ' + fmtFull(total);
+  if (categoryBox) categoryBox.innerHTML = dayDetailCategoryTableHtml(items, total);
   document.querySelectorAll('.day-detail-store-btn').forEach(btn => {
     const active = btn.getAttribute('data-store') === dayDetailStore;
     btn.style.background = active ? '#4f3422' : '#fffaf2';
@@ -3247,6 +3249,35 @@ function renderDayDetailItems(){
       + '<span style="font-size:12px;font-weight:600;color:#4f3422;flex-shrink:0;text-align:right;">' + (it.q||0) + '개<br><span style="font-size:11px;color:#8a654f;">' + fmtFull(it.s||0) + '</span></span>'
       + '</div>';
   }).join('');
+}
+function dayDetailCategoryTableHtml(items, total){
+  const buckets = Object.fromEntries(CATEGORY_TRENDS.map(cat => [cat.key, { ...cat, sales: 0, qty: 0 }]));
+  (items || []).forEach(item => {
+    const key = categoryTrendKey(item.n);
+    if (!key || !buckets[key]) return;
+    buckets[key].sales += Number(item.s || 0);
+    buckets[key].qty += Number(item.q || 0);
+  });
+  const rows = CATEGORY_TRENDS.map(cat => {
+    const item = buckets[cat.key];
+    const pct = total ? Math.round((item.sales / total) * 1000) / 10 : 0;
+    const leftCell = 'padding:6px 4px;border-bottom:1px solid #f4eadc;text-align:left;';
+    const rightCell = 'padding:6px 4px;border-bottom:1px solid #f4eadc;text-align:right;';
+    return '<tr>'
+      + '<td style="' + leftCell + '"><span style="display:inline-block;width:7px;height:7px;border-radius:999px;background:' + cat.color + ';margin-right:5px;"></span>' + todayEscape(cat.label) + '</td>'
+      + '<td style="' + rightCell + '">' + fmtFull(item.sales) + '</td>'
+      + '<td style="' + rightCell + '">' + pct.toFixed(1) + '%</td>'
+      + '</tr>';
+  }).join('');
+  return '<div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:7px;letter-spacing:0.2px;">카테고리별 매출 비중</div>'
+    + '<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px;color:#4b382d;">'
+    + '<thead><tr>'
+    + '<th style="text-align:left;padding:6px 4px;border-bottom:1px solid #ead9c4;color:#8a654f;font-weight:700;">카테고리</th>'
+    + '<th style="text-align:right;padding:6px 4px;border-bottom:1px solid #ead9c4;color:#8a654f;font-weight:700;">매출</th>'
+    + '<th style="text-align:right;padding:6px 4px;border-bottom:1px solid #ead9c4;color:#8a654f;font-weight:700;">비중</th>'
+    + '</tr></thead>'
+    + '<tbody>' + rows + '</tbody>'
+    + '</table>';
 }
 function setDayDetailStore(store){
   dayDetailStore = store || 'all';
@@ -3276,6 +3307,7 @@ function showDayDetail(ds){
     + '<button class="day-detail-store-btn" data-store="s2" onclick="setDayDetailStore(\'s2\')" style="border:1px solid #ead9c4;border-radius:10px;padding:8px 5px;background:#fffaf2;color:#4f3422;font-size:11px;font-weight:700;cursor:pointer;">2호점<br><span style="font-size:10px;font-weight:500;">' + (s2>0?fmtFull(s2):'기록 없음') + '</span></button>'
     + '<button class="day-detail-store-btn" data-store="all" onclick="setDayDetailStore(\'all\')" style="border:1px solid #ead9c4;border-radius:10px;padding:8px 5px;background:#4f3422;color:#fff;font-size:11px;font-weight:700;cursor:pointer;">합산<br><span style="font-size:10px;font-weight:500;">' + fmtFull(total) + '</span></button>'
     + '</div>'
+    + '<div id="dayDetailCategoryTable" style="margin-top:12px;border:1px solid #ead9c4;background:#fffaf2;border-radius:12px;padding:10px;"></div>'
     + '<div style="margin-top:14px;border-top:1px solid #e2e8f0;padding-top:12px;">'
     + '<div id="dayDetailListTitle" style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:8px;letter-spacing:0.5px;">상품별 판매</div>'
     + '<div id="dayDetailItems" style="max-height:260px;overflow-y:auto;"></div>'
